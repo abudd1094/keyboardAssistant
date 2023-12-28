@@ -1,0 +1,42 @@
+{
+    "Major": {
+        "type": "chord",
+        "semitones": [0, 4, 7],
+        "family": "Major",
+        "symbol": "Maj",
+        "description": "Major triad",
+        "tags": [
+            "basic"
+        ]
+    },
+    "Minor": {
+        "type": "chord",
+        "semitones": [0, 3, 7],
+        "family": "Minor",
+        "symbol": "Min",
+        "description": "Minor triad",
+        "tags": [
+            "basic"
+        ]
+    },
+    "Major 7th": {
+        "type": "chord",
+        "semitones": [0, 4, 7, 11],
+        "family": "Major",
+        "symbol": "Maj",
+        "description": "",
+        "tags": [
+            "basic"
+        ]
+    },
+    "Minor 7th": {
+        "type": "chord",
+        "semitones": [0, 3, 7, 10],
+        "family": "Minor",
+        "symbol": "Min",
+        "description": "",
+        "tags": [
+            "basic"
+        ]
+    }
+}

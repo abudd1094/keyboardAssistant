@@ -1,0 +1,62 @@
+{
+    "Minor 2nd": {
+        "type": "interval",
+        "semitones": [0, 1],
+        "symbol": "m2"
+    },
+    "Major 2nd": {
+        "type": "interval",
+        "semitones": [0, 2],
+        "symbol": "M2"
+    },
+    "Minor 3rd": {
+        "type": "interval",
+        "semitones": [0, 3],
+        "symbol": "m3"
+    },
+    "Major 3rd": {
+        "type": "interval",
+        "semitones": [0, 4],
+        "symbol": "M3"
+    },
+    "Perfect 4th": {
+        "type": "interval",
+        "semitones": [0, 5],
+        "symbol": "P4"
+    },
+    "Tritone": {
+        "type": "interval",
+        "semitones": [0, 6],
+        "symbol": "TT"
+    },
+    "Perfect 5th": {
+        "type": "interval",
+        "semitones": [0, 7],
+        "symbol": "P5"
+    },
+    "Minor 6th": {
+        "type": "interval",
+        "semitones": [0, 8],
+        "symbol": "m6"
+    },
+    "Major 6th": {
+        "type": "interval",
+        "semitones": [0, 9],
+        "symbol": "M6"
+    },
+    "Minor 7th": {
+        "type": "interval",
+        "semitones": [0, 10],
+        "symbol": "m7"
+    },
+    "Major 7th": {
+        "type": "interval",
+        "semitones": [0, 11],
+        "symbol": "M7"
+    },
+    "Octave": {
+        "type": "interval",
+        "semitones": [0, 12],
+        "symbol": "M7"
+    }
+}
