@@ -96,6 +96,20 @@ function getBlackKeyCount(semitonesArr) {
   return blackKeyCount;
 }
 
+// Returns the black keys in an array of semitones
+function getBlackKeys(semitonesArr, normalize) {
+  var blackKeys = semitonesArr.filter(function (s) { return s % 12 == 1 || s % 12 == 3 || s % 12 == 6 || s % 12 == 8 || s % 12 == 10; });
+  return normalize ? blackKeys.map(function (s) { return s % 12; }) : blackKeys;
+}
+
+// Returns the white keys in an array of semitones
+function getWhiteKeys(semitonesArr, normalize) {
+  var whiteKeys = semitonesArr.filter(function (s) { return s % 12 == 0 || s % 12 == 2 || s % 12 == 4 || s % 12 == 5 || s % 12 == 7 || s % 12 == 9 || s % 12 == 11; });
+  return normalize ? whiteKeys.map(function (s) { return s % 12; }) : whiteKeys;
+}
+
 exports.parseNoteName = parseNoteName;
 exports.detectBlackKey = detectBlackKey;
 exports.getBlackKeyCount = getBlackKeyCount;
+exports.getBlackKeys = getBlackKeys;
+exports.getWhiteKeys = getWhiteKeys;

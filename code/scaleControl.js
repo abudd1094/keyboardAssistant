@@ -1,70 +1,77 @@
-var { detectBlackKey } = require("utilities");
+var { detectBlackKey, getBlackKeys, getWhiteKeys } = require("utilities");
 
-var sharps = [];
-var flats = [];
+// array of max comment objects used to display key signature
+var commentObjects = [];
 
 function list() {
   var semitones = arrayfromargs(arguments);
-  g = new Global("ref");
-
-  if (g.refMode == "Scale") {
-    error("scaleControl semitones" + "\n");
-    post(JSON.stringify(semitones) + "\n");
-
-    var viewport = this.patcher
-      .getnamed("nslider[0]")
-      .getattr("presentation_rect");
-    post(viewport + "\n");
-  }
-}
-
-function t(noteNo) {
-  // TEST TEMP: done above, get the nslider viewport to calculate intial offsets
   var viewport = this.patcher
     .getnamed("nslider[0]")
     .getattr("presentation_rect");
 
-  error("TEST" + "\n");
-  post(viewport + "\n");
-
-  var useSharp = true;
+  g = new Global("ref");
 
   // define variables for comment positioning
-  var yInterval = 2.5; // pixels between notes
-
+  var xInterval = 7; // pixels between comments
+  var yInterval = 2.5;
   var xPos = viewport[0];
   var yPos = viewport[1];
 
-  var xOffset = 20;
-  var yOffset = getKeySigYOffset(noteNo % 12, useSharp, yInterval);
-
   var width = 21; // lowest possible with font size 14
   var height = 22;
-
   var fontSize = 14;
 
-  renderComment(
-    xPos,
-    yPos,
-    xOffset,
-    yOffset,
-    width,
-    height,
-    fontSize,
-    useSharp
-  );
+  if (g.refMode == "Scale") {
+    var viewport = this.patcher
+      .getnamed("nslider[0]")
+      .getattr("presentation_rect");
+
+    var blackKeys = getBlackKeys(semitones, true); // true arg normalizes returned semitones to 0-11 range: ;
+    var sortedBlackKeys = sortBlackSemitones(g.useSharp, blackKeys);
+
+    removeAllComments();
+
+    // render comments for each black key in the key signature
+    for (var i = 0; i < sortedBlackKeys.length; i++) {
+      renderComment(
+        sortedBlackKeys[i],
+        xPos,
+        yPos,
+        width,
+        height,
+        fontSize,
+        g.useSharp,
+        xInterval,
+        yInterval
+      );
+    }
+  }
 }
 
 function renderComment(
+  semitone,
   xPos,
   yPos,
-  xOffset,
-  yOffset,
   width,
   height,
   fontSize,
-  useSharp
+  useSharp,
+  xInterval,
+  yInterval
 ) {
+  // if fed black key, adjust to white key accordingly (down for sharps, up for flats)
+  if (detectBlackKey(semitone)) {
+    if (useSharp) {
+      semitone -= 1;
+    } else {
+      semitone += 1;
+    }
+  }
+
+  // determine offsets
+  var xOffset = 20 + xInterval * commentObjects.length; // adjust x offset based on number of comments
+  var yOffset = getKeySigYOffset(semitone % 12, useSharp, yInterval); // adjust y offset based on sharp or flat note
+
   // render key signature comment
   var comment = this.patcher.newobject(
     "comment",
@@ -85,6 +92,15 @@ function renderComment(
   }
 
   this.patcher.bringtofront(comment);
+  commentObjects.push(comment);
+}
+
+function removeAllComments() {
+  for (var i = 0; i < commentObjects.length; i++) {
+    this.patcher.remove(commentObjects[i]);
+  }
+
+  commentObjects = [];
 }
 
 // get the y offset for the key signature comment (based on traditional notation)
@@ -111,4 +127,25 @@ function getKeySigYOffset(normalizedNoteNo, useSharp, yInterval) {
     default:
       return 0;
   }
+}
+
+// returns black key semitones in the tradional order of sharps or flats
+function sortBlackSemitones(useSharp, blackKeys) {
+  var sortedBlackKeys = blackKeys.slice();
+
+  // Sorting logic for sharp order
+  if (useSharp) {
+    var sharpOrder = [6, 1, 8, 3, 11, 5]; // BEADGCF
+    sortedBlackKeys.sort(function (a, b) {
+      return sharpOrder.indexOf(a % 12) - sharpOrder.indexOf(b % 12);
+    });
+  } else {
+    // Sorting logic for flat order
+    var flatOrder = [5, 11, 3, 8, 1, 6]; // FCGDAEB
+    sortedBlackKeys.sort(function (a, b) {
+      return flatOrder.indexOf(a % 12) - flatOrder.indexOf(b % 12);
+    });
+  }
+
+  return sortedBlackKeys;
 }

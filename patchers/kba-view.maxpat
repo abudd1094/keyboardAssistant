@@ -2805,7 +2805,6 @@
 						"boxes" : [ 							{
 								"box" : 								{
 									"id" : "obj-3",
-									"int" : 1,
 									"maxclass" : "gswitch2",
 									"numinlets" : 2,
 									"numoutlets" : 2,
@@ -3133,7 +3132,6 @@
 						"boxes" : [ 							{
 								"box" : 								{
 									"id" : "obj-3",
-									"int" : 1,
 									"maxclass" : "gswitch2",
 									"numinlets" : 2,
 									"numoutlets" : 2,
@@ -3768,6 +3766,7 @@
 , 							{
 								"box" : 								{
 									"id" : "obj-37",
+									"int" : 1,
 									"maxclass" : "gswitch",
 									"numinlets" : 3,
 									"numoutlets" : 1,
@@ -3816,6 +3815,7 @@
 , 							{
 								"box" : 								{
 									"id" : "obj-33",
+									"int" : 1,
 									"maxclass" : "gswitch",
 									"numinlets" : 3,
 									"numoutlets" : 1,
@@ -3864,6 +3864,7 @@
 , 							{
 								"box" : 								{
 									"id" : "obj-28",
+									"int" : 1,
 									"maxclass" : "gswitch",
 									"numinlets" : 3,
 									"numoutlets" : 1,
@@ -3924,6 +3925,7 @@
 , 							{
 								"box" : 								{
 									"id" : "obj-16",
+									"int" : 1,
 									"maxclass" : "gswitch",
 									"numinlets" : 3,
 									"numoutlets" : 1,
@@ -3984,6 +3986,7 @@
 , 							{
 								"box" : 								{
 									"id" : "obj-6",
+									"int" : 1,
 									"maxclass" : "gswitch",
 									"numinlets" : 3,
 									"numoutlets" : 1,
