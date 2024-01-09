@@ -69,15 +69,18 @@ function parseNoteName(semitoneInput, includeOctave) {
   }
 }
 
-// Returns the number of black keys in an array of semitones
-function isBlackKey(semitone) {
-  return (
-    semitone == 1 ||
-    semitone == 3 ||
-    semitone == 6 ||
-    semitone == 8 ||
-    semitone == 10
-  );
+// Returns true if key is black
+function detectBlackKey(note) {
+  switch (note % 12) {
+    case 1:
+    case 3:
+    case 6:
+    case 8:
+    case 10:
+      return true;
+    default:
+      return false;
+  }
 }
 
 // Returns the number of black keys in an array of semitones
@@ -85,9 +88,7 @@ function getBlackKeyCount(semitonesArr) {
   var blackKeyCount = 0;
 
   for (var i = 0; i < semitonesArr.length; i++) {
-    var semitone = semitonesArr[i] % 12;
-
-    if (isBlackKey(semitone)) {
+    if (detectBlackKey(semitonesArr[i])) {
       blackKeyCount++;
     }
   }
@@ -96,5 +97,5 @@ function getBlackKeyCount(semitonesArr) {
 }
 
 exports.parseNoteName = parseNoteName;
-exports.isBlackKey = isBlackKey;
+exports.detectBlackKey = detectBlackKey;
 exports.getBlackKeyCount = getBlackKeyCount;

@@ -3,7 +3,7 @@ setinletassist(0, "\n Input");
 outlets = 1;
 setoutletassist(0, "\n 0: Output");
 
-var { parseNoteName } = require("utilities");
+var { parseNoteName, detectBlackKey } = require("utilities");
 
 function loadbang() {
   renderInterface(true); // render interface with flats by default
@@ -87,19 +87,6 @@ function getDistanceToNextNote(note, blackKeyWidth, whiteKeyWidth) {
     case 4:
     case 11:
       return whiteKeyWidth;
-  }
-}
-
-function detectBlackKey(note) {
-  switch (note % 12) {
-    case 1:
-    case 3:
-    case 6:
-    case 8:
-    case 10:
-      return true;
-    default:
-      return false;
   }
 }
 

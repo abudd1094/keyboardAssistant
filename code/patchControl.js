@@ -3,16 +3,8 @@ setinletassist(0, "\n Input");
 outlets = 1;
 setoutletassist(0, "\n 0: Output");
 
-var {
-  renderMaxScore,
-  renderScale,
-  getMaxScores,
-  removeAllMaxScores,
-  removeMaxScore,
-} = require("maxScoreUtilities");
-
 // current reference mode
-var currentMode = "Off";
+var refMode = "Off";
 // current mode JSON data is loaded into the currentDict object
 var currentDict;
 
@@ -25,8 +17,6 @@ function clearAll() {
   clear("kslider[1]"); // clear ref 1 kslider
   clear("kslider[2]"); // clear ref 1 secondary kslider
   this.patcher.getnamed("ref1_controls_RAM_set").message("bang"); // clear the RAM message so nothing is shown on initial load
-
-  removeAllMaxScores();
 }
 
 function clear(scriptingName) {
@@ -37,68 +27,75 @@ function clear(scriptingName) {
 function load(mode) {
   var d = new Dict("ref_1");
 
-  // set mode locally
-  currentMode = mode;
+  // set mode globally & locally
+  g = new Global("ref");
+  g.refMode = mode;
+  refMode = mode;
   setRefLabel();
 
   // clear old data
   clearAll();
 
-  var nslider1 = this.patcher.getnamed("nslider[1]");
-  
   // hide reference if off
   if (mode == "Off") {
-    nslider1.setattr("hidden", 1);
-  } else {
-    nslider1.setattr("hidden", 0);
-    // load new data
-    if (mode == "Scale") loadScales(d);
-    if (mode == "Interval") loadIntervals(d);
-    if (mode == "Chord") loadChords(d);
+    this.patcher.getnamed("nslider[1]").setattr("hidden", 1);
   }
+
+  // load new data
+  if (mode == "Scale") loadScales(d);
+  if (mode == "Interval") loadIntervals(d);
+  if (mode == "Chord") loadChords(d);
 }
 
 function loadScales(d) {
   currentDict = d;
   d.import_json("factory_scales.json");
+
+  post("LOAD SCALES \n")
 }
 
 function loadIntervals(d) {
   currentDict = d;
   d.import_json("factory_intervals.json");
+
+  // show nslider 1
+  this.patcher.getnamed("nslider[1]").setattr("hidden", 0);
 }
 
 function loadChords(d) {
   currentDict = d;
   d.import_json("factory_chords.json");
-}
 
-function handleRefChange() {
-  var semitones = arrayfromargs(arguments);
-
-  if (currentMode === "Scale") {
-    handleScaleChange(semitones);
-  }
-}
-
-function handleScaleChange(semitones) {
-  removeAllMaxScores();
-
-  var maxScoreMessage = renderMaxScore(1, 157, 176);
-  renderScale(maxScoreMessage, semitones);
-}
-
-function removeAllMaxScores() {
-  var maxScores = getMaxScores();
-
-  for (var i = 0; i < maxScores.length; i++) {
-    removeMaxScore(maxScores[i]);
-  }
+  // show nslider 1
+  this.patcher.getnamed("nslider[1]").setattr("hidden", 0);
 }
 
 function setRefLabel() {
   var refLabel = this.patcher.getnamed("refLabel[1]");
 
   // hide label if off
-  refLabel.setattr("hidden", currentMode == "Off");
+  refLabel.setattr("hidden", refMode == "Off");
+}
+
+// receive processed list of semitones
+function list() {
+  var a = arrayfromargs(arguments);
+
+  if (refMode == "Scale") renderScale(a);
+}
+
+function renderScale(semitones) {
+  var viewport = this.patcher
+    .getnamed("nslider[0]")
+    .getattr("presentation_rect");
+  // var panel = this.patcher.newdefault(10, 10, "panel");
+
+  error("patchControl renderScale" + "\n");
+  post(JSON.stringify(semitones) + "\n");
+}
+
+// flat or sharp mode uses tab object where 0 = flat and 1 = sharp
+function useSharp(v) {
+  g = new Global("ref");
+  g.useSharp = v;
 }

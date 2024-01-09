@@ -12,7 +12,9 @@ function getMaxScores() {
 }
 
 // COMPOSED RENDER FUNCTIONS
-function renderScale(maxScoreMessage, semitonesArr) {
+function renderScale(maxScoreMessage, semitonesArr, useFlats) {
+  var keyType = useFlats ? "FLAT_KEY" : "SHARP_KEY";
+
   for (var i = 0; i < semitonesArr.length; i++) {
     messageMaxScore(maxScoreMessage, [
       // dur, pitch, vel, hold
@@ -24,33 +26,34 @@ function renderScale(maxScoreMessage, semitonesArr) {
     ]);
 
     var blackKeyCount = getBlackKeyCount(semitonesArr);
+
     messageMaxScore(maxScoreMessage, [
       "setKeySignature",
       0,
       0,
       blackKeyCount,
-      "SHARP_KEY",
+      keyType,
     ]);
     messageMaxScore(maxScoreMessage, [
       "setKeySignature",
       0,
       1,
       blackKeyCount,
-      "SHARP_KEY",
+      keyType,
     ]);
     messageMaxScore(maxScoreMessage, [
       "setKeySignature",
       1,
       0,
       blackKeyCount,
-      "SHARP_KEY",
+      keyType,
     ]);
     messageMaxScore(maxScoreMessage, [
       "setKeySignature",
       1,
       1,
       blackKeyCount,
-      "SHARP_KEY",
+      keyType,
     ]);
   }
 }
@@ -118,6 +121,15 @@ function removeMaxScore(maxScoreStateObj) {
 function messageMaxScore(messageObj, messageArr) {
   messageObj.message("set", messageArr);
   messageObj.message("bang");
+}
+
+function containsNegative(arr) {
+  for (var i = 0; i < arr.length; i++) {
+    if (arr[i] < 0) {
+      return true; // Found a negative number, return true
+    }
+  }
+  return false; // No negative numbers found in the array
 }
 
 // EXPORTS
