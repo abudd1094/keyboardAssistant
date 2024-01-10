@@ -50,8 +50,6 @@ function load(mode) {
 function loadScales(d) {
   currentDict = d;
   d.import_json("factory_scales.json");
-
-  post("LOAD SCALES \n")
 }
 
 function loadIntervals(d) {
@@ -75,23 +73,6 @@ function setRefLabel() {
 
   // hide label if off
   refLabel.setattr("hidden", refMode == "Off");
-}
-
-// receive processed list of semitones
-function list() {
-  var a = arrayfromargs(arguments);
-
-  if (refMode == "Scale") renderScale(a);
-}
-
-function renderScale(semitones) {
-  var viewport = this.patcher
-    .getnamed("nslider[0]")
-    .getattr("presentation_rect");
-  // var panel = this.patcher.newdefault(10, 10, "panel");
-
-  error("patchControl renderScale" + "\n");
-  post(JSON.stringify(semitones) + "\n");
 }
 
 // flat or sharp mode uses tab object where 0 = flat and 1 = sharp
