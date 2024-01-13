@@ -98,11 +98,73 @@ function getBlackKeyCount(semitonesArr) {
 
 // Returns the black keys in an array of semitones
 function getBlackKeys(semitonesArr, normalize) {
-  var blackKeys = semitonesArr.filter(function (s) { return s % 12 == 1 || s % 12 == 3 || s % 12 == 6 || s % 12 == 8 || s % 12 == 10; });
-  return normalize ? blackKeys.map(function (s) { return s % 12; }) : blackKeys;
+  var blackKeys = semitonesArr.filter(function (s) {
+    return (
+      s % 12 == 1 || s % 12 == 3 || s % 12 == 6 || s % 12 == 8 || s % 12 == 10
+    );
+  });
+  return normalize
+    ? blackKeys.map(function (s) {
+        return s % 12;
+      })
+    : blackKeys;
+}
+
+// Normalizes all semitones to first octave
+function normalize(semitones) {
+  return semitones.map(function (s) {
+    return s % 12;
+  });
+}
+
+// Returns the term for the scale type based on the number of semitones
+function getScaleCountType(semitones) {
+  switch (semitones.length) {
+    case 1:
+      return "Monotonic - 1 note";
+      break;
+    case 2:
+      return "Ditonic - 2 notes";
+      break;
+    case 3:
+      return "Tritonic - 3 notes";
+      break;
+    case 4:
+      return "Tetraonic - 4 notes";
+      break;
+    case 5:
+      return "Pentatonic - 5 notes";
+      break;
+    case 6:
+      return "Hexatonic - 6 notes";
+      break;
+    case 7:
+      return "Heptatonic - 7 notes";
+      break;
+    case 8:
+      return "Octatonic - 8 notes";
+      break;
+    case 9:
+      return "Nonatonic - 9 notes";
+      break;
+    case 10:
+      return "Decatonic - 10 notes";
+      break;
+    case 11:
+      return "Undecatonic - 11 notes";
+      break;
+    case 12:
+      return "Duodecatonic - 12 notes";
+      break;
+    default:
+      return "";
+      break;
+  }
 }
 
 exports.parseNoteName = parseNoteName;
 exports.detectBlackKey = detectBlackKey;
 exports.getBlackKeyCount = getBlackKeyCount;
 exports.getBlackKeys = getBlackKeys;
+exports.normalize = normalize;
+exports.getScaleCountType = getScaleCountType;

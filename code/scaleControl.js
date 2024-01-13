@@ -1,14 +1,18 @@
-var { detectBlackKey } = require("utilities");
+var { detectBlackKey, normalize, getScaleCountType } = require("utilities");
 
 // array of max comment objects used to display key signature
 var trebleCommentObjects = [];
 var bassCommentObjects = [];
+
+var lastKey = 0;
 
 function reset() {
   // remove all comments before rendering new ones
   removeAllComments();
   // reposition input n slider
   resetInputNslider();
+  // hide secondary comments
+  this.patcher.getnamed("refLabel[1][1]").message("hidden", 1);
 }
 
 // receives list of semitones in a scale
@@ -16,13 +20,10 @@ function list() {
   var semitones = arrayfromargs(arguments);
   g = new Global("ref");
 
-  var hasBlackKeys = semitones.some(function (s) {
-    return detectBlackKey(s);
-  });
-
   reset();
 
-  if (g.refMode == "Scale" && hasBlackKeys) {
+  if (g.refMode == "Scale") {
+    var normalizedSemitones = normalize(semitones);
     // define variables for comment positioning
     var viewport = this.patcher
       .getnamed("nslider[0]") // use leftmost nslider as reference
@@ -37,7 +38,11 @@ function list() {
     var height = 22;
     var fontSize = 14;
 
-    var sortedSemitones = sortSemitones(g.useSharp, semitones);
+    handleKeyType(normalizedSemitones);
+    handleScaleCountType(normalizedSemitones);
+
+    var targetSemitones = getTargetSemitones(normalizedSemitones);
+    var sortedSemitones = sortSemitones(targetSemitones);
 
     renderKeySignature(
       sortedSemitones,
@@ -198,13 +203,11 @@ function getKeySigYOffset(normalizedNoteNo, useSharp, yInterval) {
 }
 
 // returns semitones in the tradional order of sharps or flats
-function sortSemitones(useSharp, semitones) {
-  var order = useSharp ? [6, 1, 8, 3, 10, 5, 0] : [10, 3, 8, 1, 6, 11, 4];
+function sortSemitones(semitones) {
+  // B♭, E♭, A♭, D♭, G♭, C♭, F♭
+  var order = g.useSharp ? [5, 0, 7, 2, 9, 4, 11] : [11, 4, 9, 2, 7, 0, 5];
 
   var filteredSemitones = semitones
-    .map(function (s) {
-      return s % 12;
-    })
     .filter(function (s) {
       return order.indexOf(s) > -1;
     });
@@ -229,4 +232,85 @@ function resetInputNslider() {
   var nslider = this.patcher.getnamed("nslider[0]");
 
   nslider.setattr("presentation_rect", [0, 0, 150, 169]);
+}
+
+// checks whether key is traditionally noted with sharps or flats
+function getTraditionalKey(firstSemitone) {
+  sharpKeys = [0, 7, 2, 9, 4, 11, 6, 1];
+  flatKeys = [0, 5, 10, 3, 8, 1, 6, 11];
+
+  var isSharpKey = sharpKeys.indexOf(firstSemitone) > -1;
+  var isFlatKey = flatKeys.indexOf(firstSemitone) > -1;
+
+  if (isSharpKey && isFlatKey) {
+    return 2;
+  }
+
+  if (isFlatKey) {
+    return 0;
+  }
+
+  if (isSharpKey) {
+    return 1;
+  }
+}
+
+// returns the semitones that should be altered in the key signature for the given key
+function getTargetSemitones(semitones) {
+  var whiteKeys = [0, 2, 4, 5, 7, 9, 11];
+  var blackKeys = [1, 3, 6, 8, 10];
+  var usedBlackKeys = [];
+  var targetKeys = whiteKeys;
+
+  for (var i = 0; i < semitones.length; i++) {
+    var wIndex = whiteKeys.indexOf(semitones[i]);
+
+    if (wIndex > -1) {
+      whiteKeys.splice(wIndex, 1);
+    }
+  }
+
+  // adjust for white keys that have white siblings
+  var specialFlats = [0, 5]; // C, F
+  var specialSharps = [4, 11]; // E, B
+  var specialSemitones = g.useSharp ? specialSharps : specialFlats;
+
+  for (var i = 0; i < specialSemitones.length; i++) {
+    if (whiteKeys.indexOf(specialSemitones[i]) > -1 && whiteKeys.indexOf(specialSemitones[i] + 1) == -1) {
+      targetKeys.push((specialSemitones[i] + 1) % 12);
+    }
+  }
+
+  return targetKeys.sort();
+}
+
+// adjust the key type globally and on the panel (sharp or flat)
+function setKeyType(keyType) {
+  
+  var keyTypeTab = this.patcher.getnamed("key_type[1]");
+  keyTypeTab.message("set", keyType);
+  g.useSharp = keyType;
+  return keyType;
+}
+
+function handleKeyType(semitones) {
+  var firstSemitone = semitones[0];
+  
+  if (firstSemitone != lastKey) {
+    var traditionalKey = getTraditionalKey(semitones[0]);
+
+    // if key can be notated in sharps or flats, leave unchanged, otherwise adjust
+    if (traditionalKey != 2) {
+      setKeyType(traditionalKey);
+    }
+  }
+
+  lastKey = firstSemitone;
+}
+
+function handleScaleCountType(semitones) {
+  var scaleCountTypeComment = this.patcher.getnamed("refLabel[1][1]");
+  scaleCountTypeComment.message("hidden", 0);
+  var scaleCountType = getScaleCountType(semitones);
+  scaleCountTypeComment.message("set", scaleCountType);
 }
