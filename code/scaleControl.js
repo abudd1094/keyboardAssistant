@@ -21,8 +21,6 @@ function list() {
       .getnamed("nslider[0]") // use leftmost nslider as reference
       .getattr("presentation_rect");
 
-    post("viewport: " + JSON.stringify(viewport) + "\n");
-
     var xInterval = 6; // pixels between comments
     var yInterval = 2.5;
     var xPos = viewport[0];

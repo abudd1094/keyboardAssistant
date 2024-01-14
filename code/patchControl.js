@@ -31,15 +31,14 @@ function load(mode) {
   g = new Global("ref");
   g.refMode = mode;
   refMode = mode;
-  setRefLabel();
+
+  handleRefLabel();
 
   // clear old data
   clearAll();
 
-  // hide reference if off
-  if (mode == "Off") {
-    this.patcher.getnamed("nslider[1]").setattr("hidden", 1);
-  }
+  // hide controls if off
+  handleControls(mode == "Off");
 
   // load new data
   if (mode == "Scale") loadScales(d);
@@ -68,11 +67,53 @@ function loadChords(d) {
   this.patcher.getnamed("nslider[1]").setattr("hidden", 0);
 }
 
-function setRefLabel() {
-  var refLabel = this.patcher.getnamed("refLabel[1]");
+// hides reference label if off
+function handleRefLabel() {
+  this.patcher.getnamed("refLabel[1]").setattr("hidden", refMode == "Off"); 
+}
 
-  // hide label if off
-  refLabel.setattr("hidden", refMode == "Off");
+// shows / hides / adjust patcher object controls based on reference mode
+function handleControls(hide) {
+  var hiddenValue = hide ? 1 : 0;
+
+  // show / hide controls
+  this.patcher.getnamed("kslider_root[1]_label").setattr("hidden", hiddenValue);
+  this.patcher.getnamed("kslider_root[1]").setattr("hidden", hiddenValue);
+  this.patcher.getnamed("button_hideRootLabels").message(0);
+  this.patcher.getnamed("button_hideRootLabels").setattr("hidden", hiddenValue);
+  this.patcher.getnamed("key_type[1]").setattr("hidden", hiddenValue);
+  this.patcher.getnamed("extend[1]").setattr("hidden", hiddenValue);
+  this.patcher
+    .getnamed("nslider[1]")
+    .setattr("hidden", refMode == "Scale" ? 1 : hiddenValue); // hide nslider[1] for scale mode
+  this.patcher.getnamed("umenu_ref[1]_label").setattr("hidden", hiddenValue);
+  this.patcher.getnamed("umenu_ref[1]_label").message("set", refMode); // set ref umenu label to mode name
+  this.patcher.getnamed("umenu_ref[1]").setattr("hidden", hiddenValue);
+  this.patcher.getnamed("num_octave[1]_label").setattr("hidden", hiddenValue);
+  this.patcher
+    .getnamed("num_octave[1]_label")
+    .message("set", refMode == "Chord" ? "Oct / Inv" : "Octave"); // extend octave label to "Oct / Inv" for chord mode
+  this.patcher.getnamed("num_octave[1]").setattr("hidden", hiddenValue);
+
+  // only show inversion for chord mode
+  if (refMode == "Chord") {
+    this.patcher.getnamed("num_inversion[1]").setattr("hidden", 0);
+  } else {
+    this.patcher.getnamed("num_inversion[1]").setattr("hidden", 1);
+  }
+  // adjust octave umenu width for chord mode so inversion umenu can fit
+  var octaveUmenuPresentationRect = this.patcher
+    .getnamed("num_octave[1]")
+    .getattr("presentation_rect");
+  var umenuWidth = refMode == "Chord" ? 48 : 100; // adjust width to accommodate inversion menu
+  this.patcher
+    .getnamed("num_octave[1]")
+    .setattr("presentation_rect", [
+      octaveUmenuPresentationRect[0],
+      octaveUmenuPresentationRect[1],
+      umenuWidth,
+      octaveUmenuPresentationRect[3],
+    ]);
 }
 
 // flat or sharp mode uses tab object where 0 = flat and 1 = sharp
