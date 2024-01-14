@@ -4,18 +4,10 @@ var { detectBlackKey, normalize, getScaleCountType } = require("utilities");
 var trebleCommentObjects = [];
 var bassCommentObjects = [];
 
+// used by handleKeyType to determine whether key type has changed
 var lastKey = 0;
 
-function reset() {
-  // remove all comments before rendering new ones
-  removeAllComments();
-  // reposition input n slider
-  resetInputNslider();
-  // hide secondary comments
-  this.patcher.getnamed("refLabel[1][1]").message("hidden", 1);
-}
-
-// receives list of semitones in a scale
+// EXT MAIN: receives list of semitones in a scale
 function list() {
   var semitones = arrayfromargs(arguments);
   g = new Global("ref");
@@ -29,7 +21,7 @@ function list() {
       .getnamed("nslider[0]") // use leftmost nslider as reference
       .getattr("presentation_rect");
 
-      post("viewport: " + JSON.stringify(viewport) + "\n")
+    post("viewport: " + JSON.stringify(viewport) + "\n");
 
     var xInterval = 6; // pixels between comments
     var yInterval = 2.5;
@@ -60,6 +52,35 @@ function list() {
   }
 }
 
+// MAIN: reset the patcher to its original state
+function reset() {
+  // reposition input n slider
+  resetInputNslider();
+  // remove all comments before rendering new ones
+  removeAllComments();
+  // hide secondary comments
+  this.patcher.getnamed("refLabel[1][1]").message("hidden", 1);
+}
+
+// HELPER: reset: original viewport is [171. 0. 150. 169.]
+function resetInputNslider() {
+  var nslider = this.patcher.getnamed("nslider[0]");
+
+  nslider.setattr("presentation_rect", [171, 0, 150, 169]);
+}
+
+// HELPER: reset: removes all comment objects from the patcher
+function removeAllComments() {
+  for (var i = 0; i < trebleCommentObjects.length; i++) {
+    this.patcher.remove(trebleCommentObjects[i]);
+    this.patcher.remove(bassCommentObjects[i]);
+  }
+
+  trebleCommentObjects = [];
+  bassCommentObjects = [];
+}
+
+// MAIN: renders all comments for the key signature
 function renderKeySignature(
   semitones,
   xPos,
@@ -103,7 +124,7 @@ function renderKeySignature(
   }
 }
 
-// renders a comment object for a key signature
+// HELPER: renderKeySignature: renders a comment object for a key signature
 function renderComment(
   semitone,
   xPos,
@@ -167,18 +188,7 @@ function renderComment(
   }
 }
 
-// removes all comment objects from the patcher
-function removeAllComments() {
-  for (var i = 0; i < trebleCommentObjects.length; i++) {
-    this.patcher.remove(trebleCommentObjects[i]);
-    this.patcher.remove(bassCommentObjects[i]);
-  }
-
-  trebleCommentObjects = [];
-  bassCommentObjects = [];
-}
-
-// get the y offset for the key signature comment (based on traditional notation)
+// HELPER: renderComment: get the y offset for the key signature comment (based on traditional notation)
 function getKeySigYOffset(normalizedNoteNo, useSharp, yInterval) {
   // slightly different y for centered key signature characters
   var lowestFlatY = useSharp ? 66.5 : 65.5;
@@ -204,60 +214,31 @@ function getKeySigYOffset(normalizedNoteNo, useSharp, yInterval) {
   }
 }
 
-// returns semitones in the tradional order of sharps or flats
+// HELPER: renderComment: adjust input n slider so that key signature fits on left side
+function adjustInputNslider(xOffset) {
+  var nslider = this.patcher.getnamed("nslider[0]");
+
+  var newXpos = 171 + xOffset - 10;
+  var newWidth = 150 - xOffset;
+
+  nslider.setattr("presentation_rect", [newXpos, 0, newWidth, 169]);
+}
+
+// HELPER: list: returns semitones in the tradional order of sharps or flats
 function sortSemitones(semitones) {
   // B♭, E♭, A♭, D♭, G♭, C♭, F♭
   var order = g.useSharp ? [5, 0, 7, 2, 9, 4, 11] : [11, 4, 9, 2, 7, 0, 5];
 
-  var filteredSemitones = semitones
-    .filter(function (s) {
-      return order.indexOf(s) > -1;
-    });
+  var filteredSemitones = semitones.filter(function (s) {
+    return order.indexOf(s) > -1;
+  });
 
   return filteredSemitones.sort(function (a, b) {
     return order.indexOf(a % 12) - order.indexOf(b % 12);
   });
 }
 
-// adjust input n slider so that key signature fits on left side
-function adjustInputNslider(xOffset) {
-  var nslider = this.patcher.getnamed("nslider[0]");
-
-  var newXpos = xOffset - 10;
-  var newWidth = 150 - xOffset;
-
-  nslider.setattr("presentation_rect", [newXpos, 0, newWidth, 169]);
-}
-
-// original viewport is [171. 0. 150. 169.]
-function resetInputNslider() {
-  var nslider = this.patcher.getnamed("nslider[0]");
-
-  nslider.setattr("presentation_rect", [171, 0, 150, 169]);
-}
-
-// checks whether key is traditionally noted with sharps or flats
-function getTraditionalKey(firstSemitone) {
-  sharpKeys = [0, 7, 2, 9, 4, 11, 6, 1];
-  flatKeys = [0, 5, 10, 3, 8, 1, 6, 11];
-
-  var isSharpKey = sharpKeys.indexOf(firstSemitone) > -1;
-  var isFlatKey = flatKeys.indexOf(firstSemitone) > -1;
-
-  if (isSharpKey && isFlatKey) {
-    return 2;
-  }
-
-  if (isFlatKey) {
-    return 0;
-  }
-
-  if (isSharpKey) {
-    return 1;
-  }
-}
-
-// returns the semitones that should be altered in the key signature for the given key
+// HELPER: list: returns the semitones that should be altered in the key signature for the given key
 function getTargetSemitones(semitones) {
   var whiteKeys = [0, 2, 4, 5, 7, 9, 11];
   var blackKeys = [1, 3, 6, 8, 10];
@@ -278,7 +259,10 @@ function getTargetSemitones(semitones) {
   var specialSemitones = g.useSharp ? specialSharps : specialFlats;
 
   for (var i = 0; i < specialSemitones.length; i++) {
-    if (whiteKeys.indexOf(specialSemitones[i]) > -1 && whiteKeys.indexOf(specialSemitones[i] + 1) == -1) {
+    if (
+      whiteKeys.indexOf(specialSemitones[i]) > -1 &&
+      whiteKeys.indexOf(specialSemitones[i] + 1) == -1
+    ) {
       targetKeys.push((specialSemitones[i] + 1) % 12);
     }
   }
@@ -286,18 +270,10 @@ function getTargetSemitones(semitones) {
   return targetKeys.sort();
 }
 
-// adjust the key type globally and on the panel (sharp or flat)
-function setKeyType(keyType) {
-  
-  var keyTypeTab = this.patcher.getnamed("key_type[1]");
-  keyTypeTab.message("set", keyType);
-  g.useSharp = keyType;
-  return keyType;
-}
-
+// MAIN: adjust the key type (sharp or flat) based on the first semitone in the scale
 function handleKeyType(semitones) {
   var firstSemitone = semitones[0];
-  
+
   if (firstSemitone != lastKey) {
     var traditionalKey = getTraditionalKey(semitones[0]);
 
@@ -310,6 +286,36 @@ function handleKeyType(semitones) {
   lastKey = firstSemitone;
 }
 
+// HELPER: handleKeyType: adjust the key type globally and on the panel (sharp or flat)
+function setKeyType(keyType) {
+  var keyTypeTab = this.patcher.getnamed("key_type[1]");
+  keyTypeTab.message("set", keyType);
+  g.useSharp = keyType;
+  return keyType;
+}
+
+// HELPER: handleKeyType: checks whether key is traditionally noted with sharps or flats
+function getTraditionalKey(firstSemitone) {
+  sharpKeys = [0, 7, 2, 9, 4, 11, 6, 1];
+  flatKeys = [0, 5, 10, 3, 8, 1, 6, 11];
+
+  var isSharpKey = sharpKeys.indexOf(firstSemitone) > -1;
+  var isFlatKey = flatKeys.indexOf(firstSemitone) > -1;
+
+  if (isSharpKey && isFlatKey) {
+    return 2;
+  }
+
+  if (isFlatKey) {
+    return 0;
+  }
+
+  if (isSharpKey) {
+    return 1;
+  }
+}
+
+// HELPER: list: fetch and output the scale count type (diatonic, pentatonic, etc.)
 function handleScaleCountType(semitones) {
   var scaleCountTypeComment = this.patcher.getnamed("refLabel[1][1]");
   scaleCountTypeComment.message("hidden", 0);
