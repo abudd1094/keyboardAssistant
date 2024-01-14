@@ -29,6 +29,8 @@ function list() {
       .getnamed("nslider[0]") // use leftmost nslider as reference
       .getattr("presentation_rect");
 
+      post("viewport: " + JSON.stringify(viewport) + "\n")
+
     var xInterval = 6; // pixels between comments
     var yInterval = 2.5;
     var xPos = viewport[0];
@@ -227,11 +229,11 @@ function adjustInputNslider(xOffset) {
   nslider.setattr("presentation_rect", [newXpos, 0, newWidth, 169]);
 }
 
-// original viewport is [0, 0, 150, 169]
+// original viewport is [171. 0. 150. 169.]
 function resetInputNslider() {
   var nslider = this.patcher.getnamed("nslider[0]");
 
-  nslider.setattr("presentation_rect", [0, 0, 150, 169]);
+  nslider.setattr("presentation_rect", [171, 0, 150, 169]);
 }
 
 // checks whether key is traditionally noted with sharps or flats
