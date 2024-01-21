@@ -1,6 +1,6 @@
 /**
- * @file interfaceRenderer.js
- * @description Renders and removes a user interface for displaying note names on a Max patcher.
+ * @file referenceControl.js
+ * @description Handles reference modes and controls in a Max for Live device.
  */
 
 // Define the number of inlets
@@ -15,72 +15,87 @@ outlets = 1;
 // Set the outlet assist message
 setoutletassist(0, "\n 0: Output");
 
-// Import necessary functions from "utilities"
-var { parseNoteName, detectBlackKey } = require("utilities");
+// Global variable to store reference mode globally
+var refMode = "Off";
+
+// Global variable to store the current dictionary object
+var currentDict;
 
 /**
- * @function loadbang
- * @description Loads the interface when the Max patcher is loaded, rendering it with flats by default.
+ * @function clearAll
+ * @description Clears all references and controls.
  */
-function loadbang() {
-  renderInterface(true);
+function clearAll() {
+  // ... (code for clearing references and controls)
 }
 
 /**
- * @function renderInterface
- * @description Renders the user interface for displaying note names.
- * @param {boolean} renderFlats - Indicates whether to render flats or sharps.
+ * @function clear
+ * @description Clears a specific patcher object.
+ * @param {string} scriptingName - The scripting name of the object to be cleared.
  */
-function renderInterface(renderFlats) {
-  // ... (code for rendering the interface)
+function clear(scriptingName) {
+  // ... (code for clearing a specific patcher object)
 }
 
 /**
- * @function removeInterface
- * @description Removes the user interface from the Max patcher.
+ * @function load
+ * @description Loads data based on the selected reference mode.
+ * @param {string} mode - The reference mode (e.g., "Scale", "Interval", "Chord").
  */
-function removeInterface() {
-  // ... (code for removing the interface)
+function load(mode) {
+  // ... (code for loading data based on reference mode)
 }
 
 /**
- * @function renderComment
- * @description Renders a comment box for a given note.
- * @param {number} note - The MIDI note value.
- * @param {number} xpos - The x-coordinate of the comment box.
- * @param {number} ypos - The y-coordinate of the comment box.
- * @param {number} width - The width of the comment box.
- * @param {number} height - The height of the comment box.
+ * @function loadScales
+ * @description Loads scale data into the current dictionary object.
+ * @param {Dict} d - The dictionary object to load data into.
  */
-function renderComment(note, xpos, ypos, width, height) {
-  // ... (code for rendering a comment box)
+function loadScales(d) {
+  // ... (code for loading scale data)
 }
 
 /**
- * @function getDistanceToNextNote
- * @description Calculates the distance to the next note based on the note's MIDI value.
- * @param {number} note - The MIDI note value.
- * @param {number} blackKeyWidth - The width of a black key.
- * @param {number} whiteKeyWidth - The width of a white key.
- * @returns {number} The distance to the next note.
+ * @function loadIntervals
+ * @description Loads interval data into the current dictionary object.
+ * @param {Dict} d - The dictionary object to load data into.
  */
-function getDistanceToNextNote(note, blackKeyWidth, whiteKeyWidth) {
-  // ... (code for calculating distance to the next note)
+function loadIntervals(d) {
+  // ... (code for loading interval data)
 }
 
 /**
- * @function removeComment
- * @description Removes a comment box with the specified name.
- * @param {string} commentName - The name of the comment box to be removed.
+ * @function loadChords
+ * @description Loads chord data into the current dictionary object.
+ * @param {Dict} d - The dictionary object to load data into.
  */
-function removeComment(commentName) {
-  // ... (code for removing a comment box)
+function loadChords(d) {
+  // ... (code for loading chord data)
 }
 
 /**
- * @function showNote
- * @description Displays a note by unhiding the corresponding comment box.
- * @param {number} note - The MIDI note value to be displayed.
+ * @function handleRefLabel
+ * @description Handles the visibility of the reference label based on the current reference mode.
  */
-function showNote(note) {
-  // ... (code for showing a note)
+function handleRefLabel() {
+  // ... (code for handling the visibility of the reference label)
+}
+
+/**
+ * @function handleControls
+ * @description Shows/hides/adjusts patcher object controls based on the reference mode.
+ * @param {boolean} hide - Whether to hide or show controls.
+ */
+function handleControls(hide) {
+  // ... (code for showing/hiding/adjusting patcher object controls)
+}
+
+/**
+ * @function useSharp
+ * @description Sets the global variable for using sharp notation.
+ * @param {number} v - 0 for flat, 1 for sharp.
+ */
+function useSharp(v) {
+  // ... (code for setting the global variable for using sharp notation)
+}

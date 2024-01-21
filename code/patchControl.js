@@ -1,3 +1,7 @@
+/**
+ * @file patchControl.js
+ * @description Handles reference modes and controls in a Max for Live device.
+ */
 inlets = 1;
 setinletassist(0, "\n Input");
 outlets = 1;
@@ -8,7 +12,11 @@ var refMode = "Off";
 // current mode JSON data is loaded into the currentDict object
 var currentDict;
 
-// patcher objects are iterated by reverse z index; input kslider nslider are on top with suffix [0]
+// MAX FUNCTIONS
+/**
+ * @function clearAll
+ * @description Clears all references and controls.
+ */
 function clearAll() {
   var d = new Dict("ref_1");
   d.clear(); // clear passed in dictionary
@@ -19,11 +27,11 @@ function clearAll() {
   this.patcher.getnamed("ref1_controls_RAM_set").message("bang"); // clear the RAM message so nothing is shown on initial load
 }
 
-function clear(scriptingName) {
-  var maxobj = this.patcher.getnamed(scriptingName);
-  maxobj.message("clear");
-}
-
+/**
+ * @function load
+ * @description Loads data based on the selected reference mode.
+ * @param {string} mode - The reference mode (e.g., "Scale", "Interval", "Chord").
+ */
 function load(mode) {
   var d = new Dict("ref_1");
 
@@ -46,11 +54,42 @@ function load(mode) {
   if (mode == "Chord") loadChords(d);
 }
 
+/**
+ * @function useSharp
+ * @description Sets the global variable for using sharp notation. Flat or sharp mode uses tab object where 0 = flat and 1 = sharp.
+ * @param {number} v - 0 for flat, 1 for sharp.
+ */
+function useSharp(v) {
+  g = new Global("ref");
+  g.useSharp = v;
+}
+
+// HELPER FUNCTIONS
+/**
+ * @function clear
+ * @description Clears a specific patcher object.
+ * @param {string} scriptingName - The scripting name of the object to be cleared.
+ */
+function clear(scriptingName) {
+  var maxobj = this.patcher.getnamed(scriptingName);
+  maxobj.message("clear");
+}
+
+/**
+ * @function loadScales
+ * @description Loads scale data into the current dictionary object.
+ * @param {Dict} d - The dictionary object to load data into.
+ */
 function loadScales(d) {
   currentDict = d;
   d.import_json("factory_scales.json");
 }
 
+/**
+ * @function loadIntervals
+ * @description Loads interval data into the current dictionary object.
+ * @param {Dict} d - The dictionary object to load data into.
+ */
 function loadIntervals(d) {
   currentDict = d;
   d.import_json("factory_intervals.json");
@@ -59,6 +98,11 @@ function loadIntervals(d) {
   this.patcher.getnamed("nslider[1]").setattr("hidden", 0);
 }
 
+/**
+ * @function loadChords
+ * @description Loads chord data into the current dictionary object.
+ * @param {Dict} d - The dictionary object to load data into.
+ */
 function loadChords(d) {
   currentDict = d;
   d.import_json("factory_chords.json");
@@ -67,12 +111,12 @@ function loadChords(d) {
   this.patcher.getnamed("nslider[1]").setattr("hidden", 0);
 }
 
-// hides reference label if off
-function handleRefLabel() {
-  this.patcher.getnamed("refLabel[1]").setattr("hidden", refMode == "Off"); 
-}
 
-// shows / hides / adjust patcher object controls based on reference mode
+/**
+ * @function handleControls
+ * @description Shows/hides/adjusts patcher object controls based on the reference mode.
+ * @param {boolean} hide - Whether to hide or show controls.
+ */
 function handleControls(hide) {
   var hiddenValue = hide ? 1 : 0;
 
@@ -116,8 +160,10 @@ function handleControls(hide) {
     ]);
 }
 
-// flat or sharp mode uses tab object where 0 = flat and 1 = sharp
-function useSharp(v) {
-  g = new Global("ref");
-  g.useSharp = v;
+/**
+ * @function handleRefLabel
+ * @description Handles the visibility of the reference label based on the current reference mode. (hides it if off)
+ */
+function handleRefLabel() {
+  this.patcher.getnamed("refLabel[1]").setattr("hidden", refMode == "Off");
 }

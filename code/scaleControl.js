@@ -299,7 +299,7 @@ function handleKeyType(semitones) {
 // HELPER: handleKeyType: adjust the key type globally and on the panel (sharp or flat)
 function setKeyType(keyType) {
   var keyTypeTab = this.patcher.getnamed("key_type[1]");
-  keyTypeTab.message("set", keyType);
+  keyTypeTab.message(keyType);
   g.useSharp = keyType;
   return keyType;
 }
