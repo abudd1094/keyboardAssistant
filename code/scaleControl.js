@@ -1,3 +1,8 @@
+/**
+ * @file scaleControl.js
+ * @description Handles the rendering of key signatures and scale-mode-specific controls in a Max for Live device.
+ */
+
 var {
   detectBlackKey,
   normalize,
@@ -13,7 +18,11 @@ var scaleNSliderObjects = [];
 // used by handleKeyType to determine whether key type has changed
 var lastKey = 0;
 
-// EXT MAIN: receives list of semitones in a scale
+// MAIN FUNCTIONS
+/**
+ * @function list
+ * @description Receives a list of semitones in a scale and renders key signatures and an additional nslider for each note.
+ */
 function list() {
   var semitones = arrayfromargs(arguments);
   g = new Global("ref");
@@ -59,7 +68,10 @@ function list() {
   }
 }
 
-// MAIN: reset the patcher to its original state
+/**
+ * @function reset
+ * @description Resets the patcher to its original state.
+ */
 function reset() {
   // reposition input n slider
   resetInputNslider();
@@ -72,25 +84,19 @@ function reset() {
   removeScaleNSliders();
 }
 
-// HELPER: reset: original viewport is [171. 0. 150. 169.]
-function resetInputNslider() {
-  var nslider = this.patcher.getnamed("nslider[0]");
-
-  nslider.setattr("presentation_rect", [171, 0, 150, 169]);
-}
-
-// HELPER: reset: removes all comment objects from the patcher
-function removeAllComments() {
-  for (var i = 0; i < trebleCommentObjects.length; i++) {
-    this.patcher.remove(trebleCommentObjects[i]);
-    this.patcher.remove(bassCommentObjects[i]);
-  }
-
-  trebleCommentObjects = [];
-  bassCommentObjects = [];
-}
-
-// MAIN: renders all comments for the key signature
+/**
+ * @function renderKeySignature
+ * @description Renders all comments for the key signature.
+ * @param {number[]} semitones - The semitones to be rendered in the key signature.
+ * @param {number} xPos - The x-position of the key signature.
+ * @param {number} yPos - The y-position of the key signature.
+ * @param {number} width - The width of the comment box.
+ * @param {number} height - The height of the comment box.
+ * @param {number} fontSize - The font size of the comment box.
+ * @param {boolean} useSharp - Whether to use sharp notation.
+ * @param {number} xInterval - The horizontal interval between comments.
+ * @param {number} yInterval - The vertical interval between comments.
+ */
 function renderKeySignature(
   semitones,
   xPos,
@@ -134,7 +140,77 @@ function renderKeySignature(
   }
 }
 
-// HELPER: renderKeySignature: renders a comment object for a key signature
+/**
+ * @function renderScaleNSliders
+ * @description Renders the scale nsliders based on the given semitones.
+ * @param {number[]} semitones - The list of semitones in a scale.
+ */
+function renderScaleNSliders(semitones) {
+  var viewport = this.patcher
+    .getnamed("nslider[1]") // use ref nslider as base
+    .getattr("presentation_rect");
+
+  var xPos = viewport[0];
+  var yPos = viewport[1];
+
+  var width = viewport[2] / 11; // divide width by highest possible number of semitones (chromatic scale: 11)
+  var height = viewport[3]; // match height of ref nslider 
+
+  for (var i = 0; i < semitones.length; i++) {
+    renderNslider(semitones[i], xPos, yPos, width, height);
+    xPos += width;
+  }
+
+  // render last first note of next octave
+  renderNslider(semitones[0] + 12, xPos, yPos, width, height);
+}
+
+// HELPER FUNCTIONS
+/**
+ * @function renderNslider
+ * @description Renders an nslider for a given semitone and position.
+ * @param {number} semitone - The semitone value.
+ * @param {number} xPos - The x-position of the nslider.
+ * @param {number} yPos - The y-position of the nslider.
+ * @param {number} width - The width of the nslider.
+ * @param {number} height - The height of the nslider.
+ */
+function renderNslider(semitone, xPos, yPos, width, height) {
+  var g = new Global("ref");
+
+  var nSlider = this.patcher.newdefault(
+    0,
+    0,
+    "nslider"
+  );
+  nSlider.setattr("presentation", 1);
+  nSlider.setattr("presentation_rect", xPos, yPos, 50, height);
+  nSlider.setattr("clefs", 0);
+  nSlider.setattr("staffs", 0);
+  nSlider.setattr("ignoreclick", 1);
+  nSlider.setattr("bgcolor", 0.200, 0.200, 0.200, 0.000);
+  nSlider.setattr("fgcolor", 0.000, 0.000, 0.000, 1.000);
+  nSlider.message(g.useSharp ? semitone : 0 - semitone);
+
+  this.patcher.bringtofront(nSlider);
+
+  scaleNSliderObjects.push(nSlider);
+}
+
+/**
+ * @function renderComment
+ * @description Renders a comment object for a key signature.
+ * @param {number} semitone - The MIDI note value of the key signature.
+ * @param {number} xPos - The x-coordinate of the comment box.
+ * @param {number} yPos - The y-coordinate of the comment box.
+ * @param {number} width - The width of the comment box.
+ * @param {number} height - The height of the comment box.
+ * @param {number} fontSize - The font size of the comment box.
+ * @param {boolean} useSharp - Whether to use sharp notation.
+ * @param {number} xInterval - The horizontal interval between comments.
+ * @param {number} yInterval - The vertical interval between comments.
+ * @param {boolean} bassClef - Whether the comment is for bass clef.
+ */
 function renderComment(
   semitone,
   xPos,
@@ -198,7 +274,50 @@ function renderComment(
   }
 }
 
-// HELPER: renderComment: get the y offset for the key signature comment (based on traditional notation)
+/**
+ * @function removeAllComments
+ * @description Removes all comment objects from the patcher.
+ */
+function removeAllComments() {
+  for (var i = 0; i < trebleCommentObjects.length; i++) {
+    this.patcher.remove(trebleCommentObjects[i]);
+    this.patcher.remove(bassCommentObjects[i]);
+  }
+
+  trebleCommentObjects = [];
+  bassCommentObjects = [];
+}
+
+/**
+ * @function removeScaleNSliders
+ * @description Removes all the scale nsliders from the patcher.
+ */
+function removeScaleNSliders() {
+  if (scaleNSliderObjects.length > 0) {
+    for (var i = 0; i < scaleNSliderObjects.length; i++) {
+      this.patcher.remove(scaleNSliderObjects[i]);
+    }
+  }
+}
+
+/**
+ * @function resetInputNslider
+ * @description Resets the input n slider to its original position. Original viewport is [171. 0. 150. 169.]
+ */
+function resetInputNslider() {
+  var nslider = this.patcher.getnamed("nslider[0]");
+
+  nslider.setattr("presentation_rect", [171, 0, 150, 169]);
+}
+
+/**
+ * @function getKeySigYOffset
+ * @description Gets the y offset for the key signature comment (based on traditional notation).
+ * @param {number} normalizedNoteNo - The normalized note number.
+ * @param {boolean} useSharp - Whether to use sharp notation.
+ * @param {number} yInterval - The vertical interval between comments.
+ * @returns {number} The y offset for the key signature comment.
+ */
 function getKeySigYOffset(normalizedNoteNo, useSharp, yInterval) {
   // slightly different y for centered key signature characters
   var lowestFlatY = useSharp ? 66.5 : 65.5;
@@ -224,7 +343,11 @@ function getKeySigYOffset(normalizedNoteNo, useSharp, yInterval) {
   }
 }
 
-// HELPER: renderComment: adjust input n slider so that key signature fits on left side
+/**
+ * @function adjustInputNslider
+ * @description Adjusts the input n slider so that the key signature fits on the left side.
+ * @param {number} xOffset - The x offset to adjust the input n slider.
+ */
 function adjustInputNslider(xOffset) {
   var nslider = this.patcher.getnamed("nslider[0]");
 
@@ -234,7 +357,12 @@ function adjustInputNslider(xOffset) {
   nslider.setattr("presentation_rect", [newXpos, 0, newWidth, 169]);
 }
 
-// HELPER: list: returns semitones in the tradional order of sharps or flats
+/**
+ * @function sortSemitones
+ * @description Returns semitones in the traditional order of sharps or flats.
+ * @param {number[]} semitones - The semitones to be sorted.
+ * @returns {number[]} The sorted semitones.
+ */
 function sortSemitones(semitones) {
   // B♭, E♭, A♭, D♭, G♭, C♭, F♭
   var order = g.useSharp ? [5, 0, 7, 2, 9, 4, 11] : [11, 4, 9, 2, 7, 0, 5];
@@ -248,7 +376,12 @@ function sortSemitones(semitones) {
   });
 }
 
-// HELPER: list: returns the semitones that should be altered in the key signature for the given key
+/**
+ * @function getTargetSemitones
+ * @description Returns the semitones that should be altered in the key signature for the given key.
+ * @param {number[]} semitones - The semitones of the key signature.
+ * @returns {number[]} The target semitones to be altered.
+ */
 function getTargetSemitones(semitones) {
   var whiteKeys = [0, 2, 4, 5, 7, 9, 11];
   var blackKeys = [1, 3, 6, 8, 10];
@@ -280,7 +413,11 @@ function getTargetSemitones(semitones) {
   return targetKeys.sort();
 }
 
-// MAIN: adjust the key type (sharp or flat) based on the first semitone in the scale
+/**
+ * @function handleKeyType
+ * @description Adjusts the key type (sharp or flat) based on the first semitone in the scale.
+ * @param {number[]} semitones - The semitones of the scale.
+ */
 function handleKeyType(semitones) {
   var firstSemitone = semitones[0];
 
@@ -296,7 +433,12 @@ function handleKeyType(semitones) {
   lastKey = firstSemitone;
 }
 
-// HELPER: handleKeyType: adjust the key type globally and on the panel (sharp or flat)
+/**
+ * @function setKeyType
+ * @description Adjusts the key type globally and on the panel (sharp or flat).
+ * @param {number} keyType - The key type (0 for flat, 1 for sharp).
+ * @returns {number} The adjusted key type.
+ */
 function setKeyType(keyType) {
   var keyTypeTab = this.patcher.getnamed("key_type[1]");
   keyTypeTab.message(keyType);
@@ -304,7 +446,12 @@ function setKeyType(keyType) {
   return keyType;
 }
 
-// HELPER: handleKeyType: checks whether key is traditionally noted with sharps or flats
+/**
+ * @function getTraditionalKey
+ * @description Checks whether the key is traditionally noted with sharps or flats.
+ * @param {number} firstSemitone - The first semitone of the scale.
+ * @returns {number} The traditional key type (0 for flat, 1 for sharp, 2 for both).
+ */
 function getTraditionalKey(firstSemitone) {
   sharpKeys = [0, 7, 2, 9, 4, 11, 6, 1];
   flatKeys = [0, 5, 10, 3, 8, 1, 6, 11];
@@ -325,7 +472,11 @@ function getTraditionalKey(firstSemitone) {
   }
 }
 
-// HELPER: list: fetch and output the scale count type (diatonic, pentatonic, etc.)
+/**
+ * @function handleScaleCountType
+ * @description Fetches and outputs the scale count type (diatonic, pentatonic, etc.).
+ * @param {number[]} semitones - The list of semitones in a scale.
+ */
 function handleScaleCountType(semitones) {
   var scaleCountTypeComment = this.patcher.getnamed("refLabel[1][1]");
   scaleCountTypeComment.message("hidden", 0);
@@ -333,62 +484,15 @@ function handleScaleCountType(semitones) {
   scaleCountTypeComment.message("set", scaleCountType);
 }
 
-// HELPER: list:
+/**
+ * @function handleIntervalSeq
+ * @description Fetches and outputs the interval sequence in W/H syntax or interval symbols.
+ * @param {number[]} semitones - The list of semitones in a scale.
+ */
 function handleIntervalSeq(semitones) {
   var intervalSeqComment = this.patcher.getnamed("refLabel[1][2]");
   intervalSeqComment.message("hidden", 0);
   var intervalSeq = getIntervalSeq(semitones);
 
   intervalSeqComment.message("set", intervalSeq);
-}
-
-function renderScaleNSliders(semitones) {
-  var viewport = this.patcher
-    .getnamed("nslider[1]") // use ref nslider as base
-    .getattr("presentation_rect");
-
-  var xPos = viewport[0];
-  var yPos = viewport[1];
-
-  var width = viewport[2] / 11; // divide width by highest possible number of semitones (chromatic scale: 11)
-  var height = viewport[3]; // match height of ref nslider 
-
-  for (var i = 0; i < semitones.length; i++) {
-    renderNslider(semitones[i], xPos, yPos, width, height);
-    xPos += width;
-  }
-
-  // render last first note of next octave
-  renderNslider(semitones[0] + 12, xPos, yPos, width, height);
-}
-
-function removeScaleNSliders() {
-  if (scaleNSliderObjects.length > 0) {
-    for (var i = 0; i < scaleNSliderObjects.length; i++) {
-      this.patcher.remove(scaleNSliderObjects[i]);
-    }
-  }
-}
-
-function renderNslider(semitone, xPos, yPos, width, height) {
-  var g = new Global("ref");
-
-  var nSlider = this.patcher.newdefault(
-    0,
-    0,
-    "nslider"
-  );
-  nSlider.setattr("presentation", 1);
-
-  nSlider.setattr("presentation_rect", xPos, yPos, 50, height);
-  nSlider.setattr("clefs", 0);
-  nSlider.setattr("staffs", 0);
-  nSlider.setattr("ignoreclick", 1);
-  nSlider.setattr("bgcolor", 0.200, 0.200, 0.200, 0.000);
-  nSlider.setattr("fgcolor", 0.000, 0.000, 0.000, 1.000);
-  nSlider.message(g.useSharp ? semitone : 0 - semitone);
-
-  this.patcher.bringtofront(nSlider);
-
-  scaleNSliderObjects.push(nSlider);
 }

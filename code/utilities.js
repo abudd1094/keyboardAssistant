@@ -1,3 +1,7 @@
+/**
+ * @file utilities.js
+ */
+
 // Returns the note name of a semitone with an optional octave integer (e.g. 60 -> C or C4)
 function parseNoteName(semitoneInput, includeOctave) {
   var useFlat = semitoneInput < 0 ? 1 : 0;
@@ -216,6 +220,7 @@ function getIntervalSeq(semitones) {
   }
 }
 
+// EXPORTS
 exports.parseNoteName = parseNoteName;
 exports.detectBlackKey = detectBlackKey;
 exports.getBlackKeyCount = getBlackKeyCount;
