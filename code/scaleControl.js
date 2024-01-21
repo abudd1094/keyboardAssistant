@@ -1,8 +1,14 @@
-var { detectBlackKey, normalize, getScaleCountType } = require("utilities");
+var {
+  detectBlackKey,
+  normalize,
+  getScaleCountType,
+  getIntervalSeq,
+} = require("utilities");
 
 // array of max comment objects used to display key signature
 var trebleCommentObjects = [];
 var bassCommentObjects = [];
+var scaleNSliderObjects = [];
 
 // used by handleKeyType to determine whether key type has changed
 var lastKey = 0;
@@ -32,6 +38,7 @@ function list() {
 
     handleKeyType(normalizedSemitones);
     handleScaleCountType(normalizedSemitones);
+    handleIntervalSeq(normalizedSemitones);
 
     var targetSemitones = getTargetSemitones(normalizedSemitones);
     var sortedSemitones = sortSemitones(targetSemitones);
@@ -47,6 +54,8 @@ function list() {
       xInterval,
       yInterval
     );
+
+    renderScaleNSliders(semitones);
   }
 }
 
@@ -58,6 +67,9 @@ function reset() {
   removeAllComments();
   // hide secondary comments
   this.patcher.getnamed("refLabel[1][1]").message("hidden", 1);
+  this.patcher.getnamed("refLabel[1][2]").message("hidden", 1);
+  // remove scale nsliders
+  removeScaleNSliders();
 }
 
 // HELPER: reset: original viewport is [171. 0. 150. 169.]
@@ -319,4 +331,64 @@ function handleScaleCountType(semitones) {
   scaleCountTypeComment.message("hidden", 0);
   var scaleCountType = getScaleCountType(semitones);
   scaleCountTypeComment.message("set", scaleCountType);
+}
+
+// HELPER: list:
+function handleIntervalSeq(semitones) {
+  var intervalSeqComment = this.patcher.getnamed("refLabel[1][2]");
+  intervalSeqComment.message("hidden", 0);
+  var intervalSeq = getIntervalSeq(semitones);
+
+  intervalSeqComment.message("set", intervalSeq);
+}
+
+function renderScaleNSliders(semitones) {
+  var viewport = this.patcher
+    .getnamed("nslider[1]") // use ref nslider as base
+    .getattr("presentation_rect");
+
+  var xPos = viewport[0];
+  var yPos = viewport[1];
+
+  var width = viewport[2] / 11; // divide width by highest possible number of semitones (chromatic scale: 11)
+  var height = viewport[3]; // match height of ref nslider 
+
+  for (var i = 0; i < semitones.length; i++) {
+    renderNslider(semitones[i], xPos, yPos, width, height);
+    xPos += width;
+  }
+
+  // render last first note of next octave
+  renderNslider(semitones[0] + 12, xPos, yPos, width, height);
+}
+
+function removeScaleNSliders() {
+  if (scaleNSliderObjects.length > 0) {
+    for (var i = 0; i < scaleNSliderObjects.length; i++) {
+      this.patcher.remove(scaleNSliderObjects[i]);
+    }
+  }
+}
+
+function renderNslider(semitone, xPos, yPos, width, height) {
+  var g = new Global("ref");
+
+  var nSlider = this.patcher.newdefault(
+    0,
+    0,
+    "nslider"
+  );
+  nSlider.setattr("presentation", 1);
+
+  nSlider.setattr("presentation_rect", xPos, yPos, 50, height);
+  nSlider.setattr("clefs", 0);
+  nSlider.setattr("staffs", 0);
+  nSlider.setattr("ignoreclick", 1);
+  nSlider.setattr("bgcolor", 0.200, 0.200, 0.200, 0.000);
+  nSlider.setattr("fgcolor", 0.000, 0.000, 0.000, 1.000);
+  nSlider.message(g.useSharp ? semitone : 0 - semitone);
+
+  this.patcher.bringtofront(nSlider);
+
+  scaleNSliderObjects.push(nSlider);
 }

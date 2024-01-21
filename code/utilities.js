@@ -162,9 +162,64 @@ function getScaleCountType(semitones) {
   }
 }
 
+// Returns the interval sequence for a given array of semitones (either in terms of half steps or whole steps or interval names if not possible)
+function getIntervalSeq(semitones) {
+  var intervals = [];
+  var tones = [];
+
+  for (var i = 0; i <= semitones.length; i++) {
+    switch (semitones[i + 1] - semitones[i]) {
+      case 1:
+        intervals.push("m2");
+        tones.push("H");
+        break;
+      case 2:
+        intervals.push("M2");
+        tones.push("W");
+        break;
+      case 3:
+        intervals.push("m3");
+        break;
+      case 4:
+        intervals.push("M3");
+        break;
+      case 5:
+        intervals.push("P4");
+        break;
+      case 6:
+        intervals.push("TT");
+        break;
+      case 7:
+        intervals.push("P5");
+        break;
+      case 8:
+        intervals.push("m6");
+        break;
+      case 9:
+        intervals.push("M6");
+        break;
+      case 10:
+        intervals.push("m7");
+        break;
+      case 11:
+        intervals.push("M7");
+        break;
+      default:
+        break;
+    }
+  }
+
+  if (intervals.length > tones.length) {
+    return intervals.join("-");
+  } else {
+    return tones.join("-");
+  }
+}
+
 exports.parseNoteName = parseNoteName;
 exports.detectBlackKey = detectBlackKey;
 exports.getBlackKeyCount = getBlackKeyCount;
 exports.getBlackKeys = getBlackKeys;
 exports.normalize = normalize;
 exports.getScaleCountType = getScaleCountType;
+exports.getIntervalSeq = getIntervalSeq;

@@ -1,50 +1,48 @@
+/**
+ * @file inputParser.js
+ * @description Receives player input in the form of note on/note off messages. This is then stored locally and compared to data (e.g. intervals, chords...) dependent on the current mode. The data is then displayed on the patcher.
+ */
+
 inlets = 1;
 setinletassist(0, "\n Input");
 outlets = 1;
 setoutletassist(0, "\n 0: Output");
 
+// Import necessary functions for hiding and showing note labels over the kslider objects
 var { hideNote, showNote } = require("interfaceControl");
 
-// holds predefined chord data objects
-var chords;
-// holds predefined interval data objects
-var intervals;
-// holds integers representing notes
+// Semitones that are currently being played are stored here
 var notes = [];
-// holds objects with patcher panel / comment objects:
-// { firstNote: firstNote, secondNote: secondNote, panel: panel, comment: comment }
-var patcherIntervals = [];
+
 // "Off" | "Note" | "Single Interval" | "Multi Interval" | "Chord"
 var mode = "Off";
+
+// Collections of data imported from JSON files
+var chords;
+var intervals;
+
+// Holds objects with patcher panel / comment objects: { firstNote: firstNote, secondNote: secondNote, panel: panel, comment: comment }
+var patcherIntervals = [];
+
 // colors used for interval panels and comments
 var color1 = [0.0, 0.886, 1.0, 1.0]; // light blue
 var color2 = [0.992, 1.0, 0.0, 1.0]; // yellow
 
+// MAX FUNCTIONS
+/**
+ * @function loadbang
+ * @description Loads local data from JSON files when the patcher is loaded.
+ */
 function loadbang() {
   // if no intervals exist for reference, import them
   if (!intervals) importIntervals();
 }
 
-function importChords() {
-  var d = new Dict("tempChords"); // import to temporary dictionary
-  d.import_json("factory_chords.json");
-
-  intervals = JSON.parse(d.stringify());
-  post("Imported intervals \n");
-}
-
-function importIntervals() {
-  var d = new Dict("tempIntervals"); // import to temporary dictionary
-  d.import_json("factory_intervals.json");
-
-  intervals = JSON.parse(d.stringify());
-  post("Imported intervals \n");
-}
-
-function setMode(v) {
-  mode = v;
-}
-
+/**
+ * @function list
+ * @description Handles incoming MIDI note data and performs actions based on the current mode.
+ * @param {...number} noteVeloPair - MIDI note and velocity pairs.
+ */
 function list() {
   var noteVeloPair = arrayfromargs(arguments);
 
@@ -65,31 +63,12 @@ function list() {
   }
 }
 
-function handleSingleInterval() {
-  removeAllIntervals();
-
-  // detect and show last interval if more than one note
-  if (notes.length > 1) {
-    showInterval(notes[notes.length - 2], notes[notes.length - 1]);
-  }
-}
-
-function handleMultiInterval() {
-  removeAllIntervals();
-
-  // sort notes by pitch
-  var orderedNotes = notes.slice().sort(function (a, b) {
-    return a - b;
-  });
-
-  // iterate through ordered notes and show each interval
-  for (var i = 0; i < orderedNotes.length - 1; i++) {
-    if (orderedNotes[i + 1]) {
-      showInterval(orderedNotes[i], orderedNotes[i + 1], i % 2 != 0);
-    }
-  }
-}
-
+// LOCAL VARIABLE SETTERS
+/**
+ * @function localizeNote
+ * @description Adds or removes notes from the local notes array based on MIDI input.
+ * @param {number[]} noteVeloPair - MIDI note and velocity pair.
+ */
 function localizeNote(noteVeloPair) {
   var note = noteVeloPair[0];
   // check for both positive and negative (positive is sharp, negative is flat, but they represent the same note and should be treated as one)
@@ -122,6 +101,112 @@ function localizeNote(noteVeloPair) {
   }
 }
 
+/**
+ * @function importIntervals
+ * @description Imports interval data from "factory_intervals.json".
+ */
+function importIntervals() {
+  var d = new Dict("tempIntervals"); // import to temporary dictionary
+  d.import_json("factory_intervals.json");
+
+  intervals = JSON.parse(d.stringify());
+  post("Imported intervals \n");
+}
+
+/**
+ * @function importChords
+ * @description Imports chord data from "factory_chords.json".
+ */
+function importChords() {
+  var d = new Dict("tempChords"); // import to temporary dictionary
+  d.import_json("factory_chords.json");
+
+  intervals = JSON.parse(d.stringify());
+  post("Imported intervals \n");
+}
+
+/**
+ * @function setMode
+ * @description Sets the parser mode.
+ * @param {string} v - The mode to be set.
+ */
+function setMode(v) {
+  mode = v;
+}
+
+// PARSER FUNCTIONS
+/**
+ * @function handleSingleInterval
+ * @description Handles the display of a single interval.
+ */
+function handleSingleInterval() {
+  removeAllIntervals();
+
+  // detect and show last interval if more than one note
+  if (notes.length > 1) {
+    showInterval(notes[notes.length - 2], notes[notes.length - 1]);
+  }
+}
+
+/**
+ * @function handleMultiInterval
+ * @description Handles the display of multiple intervals.
+ */
+function handleMultiInterval() {
+  removeAllIntervals();
+
+  // sort notes by pitch
+  var orderedNotes = notes.slice().sort(function (a, b) {
+    return a - b;
+  });
+
+  // iterate through ordered notes and show each interval
+  for (var i = 0; i < orderedNotes.length - 1; i++) {
+    if (orderedNotes[i + 1]) {
+      showInterval(orderedNotes[i], orderedNotes[i + 1], i % 2 != 0);
+    }
+  }
+}
+
+// HELPER FUNCTIONS
+/**
+ * @function getIntervalName
+ * @description Returns the name of the interval based on the provided notes.
+ * @param {number} firstNote - The first note of the interval.
+ * @param {number} secondNote - The second note of the interval.
+ * @returns {string} The name of the interval.
+ */
+function getIntervalName(firstNote, secondNote) {
+  var intervalNotes = [firstNote, secondNote];
+
+  // normalize to first octave in key of C (lowest note should be zero)
+  var normalizedSemitones = intervalNotes.map(function (semitone) {
+    return semitone - intervalNotes[0];
+  });
+
+  // normalize to the same octave if more than one octave difference
+  normalizedSemitones = normalizedSemitones.map(function (semitone) {
+    return semitone % 12;
+  });
+
+  // iterate through intervals to find a match and return the name
+  for (var intervalName in intervals) {
+    var currentInterval = intervals[intervalName];
+    var semitoneDifference =
+      currentInterval.semitones[1] - normalizedSemitones[1];
+
+    if (semitoneDifference == 12) return "Octave";
+    if (!semitoneDifference) return intervalName;
+  }
+}
+
+/**
+ * @function showInterval
+ * @description Displays the interval on the Max patcher using comments / panels above the kslider objects.
+ * @param {number} firstNote - The first note of the interval.
+ * @param {number} secondNote - The second note of the interval.
+ * @param {boolean} altColor - Whether to use an alternate color for the interval.
+ */
 function showInterval(firstNote, secondNote, altColor) {
   // get patcher objects to calculate display coordinates
   var kslider = this.patcher.getnamed("kslider[2]");
@@ -202,31 +287,11 @@ function showInterval(firstNote, secondNote, altColor) {
   });
 }
 
-// returns interval name
-function getIntervalName(firstNote, secondNote) {
-  var intervalNotes = [firstNote, secondNote];
-
-  // normalize to first octave in key of C (lowest note should be zero)
-  var normalizedSemitones = intervalNotes.map(function (semitone) {
-    return semitone - intervalNotes[0];
-  });
-
-  // normalize to the same octave if more than one octave difference
-  normalizedSemitones = normalizedSemitones.map(function (semitone) {
-    return semitone % 12;
-  });
-
-  // iterate through intervals to find a match and return the name
-  for (var intervalName in intervals) {
-    var currentInterval = intervals[intervalName];
-    var semitoneDifference =
-      currentInterval.semitones[1] - normalizedSemitones[1];
-
-    if (semitoneDifference == 12) return "Octave";
-    if (!semitoneDifference) return intervalName;
-  }
-}
-
+/**
+ * @function removeInterval
+ * @description Removes the interval from the Max patcher.
+ * @param {Object} interval - The interval object containing panel and comment.
+ */
 function removeInterval(interval) {
   // remove patcher objects
   if (interval.panel) this.patcher.remove(interval.panel);
@@ -238,6 +303,10 @@ function removeInterval(interval) {
   });
 }
 
+/**
+ * @function removeAllIntervals
+ * @description Removes all intervals from the Max patcher.
+ */
 function removeAllIntervals() {
   patcherIntervals.forEach(function (interval) {
     removeInterval(interval);
