@@ -63,7 +63,7 @@ function list() {
   }
 }
 
-// LOCAL VARIABLE SETTERS
+// LOCAL SETTERS
 /**
  * @function localizeNote
  * @description Adds or removes notes from the local notes array based on MIDI input.
