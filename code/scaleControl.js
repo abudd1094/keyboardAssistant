@@ -6,6 +6,7 @@
 var {
   detectBlackKey,
   normalize,
+  normalizeToC,
   getScaleCountType,
   getIntervalSeq,
 } = require("utilities");
@@ -27,7 +28,7 @@ function list() {
   var semitones = arrayfromargs(arguments);
   g = new Global("ref");
 
-  reset();
+  reset(); // reset patcher to original state
 
   if (g.refMode == "Scale") {
     var normalizedSemitones = normalize(semitones);
@@ -45,14 +46,13 @@ function list() {
     var height = 22;
     var fontSize = 14;
 
-    handleKeyType(normalizedSemitones);
-    handleScaleCountType(normalizedSemitones);
-    handleIntervalSeq(normalizedSemitones);
+    var targetSemitones = getTargetSemitones(normalizedSemitones); // get semitones to be altered in key signature
+    var sortedSemitones = sortSemitones(targetSemitones); // sort semitones in traditional order
 
-    var targetSemitones = getTargetSemitones(normalizedSemitones);
-    var sortedSemitones = sortSemitones(targetSemitones);
+    handleKeyType(normalizedSemitones); // adjust key type tabs object if necessary
 
-    renderKeySignature(
+    renderScaleNSliders(semitones); // render scale nsliders
+    renderKeySignature( // render key signature comments
       sortedSemitones,
       xPos,
       yPos,
@@ -64,7 +64,13 @@ function list() {
       yInterval
     );
 
-    renderScaleNSliders(semitones);
+    outputRefLabel(getScaleCountType(normalizedSemitones), 1); // output scale count type to ref label 1
+
+    var accidentalType = g.useSharp ? " sharps" : " flats";
+    var blackKeyCount = String(sortedSemitones.length) + accidentalType;
+
+    outputRefLabel(blackKeyCount, 2); // output black key count to ref label 2
+    outputRefLabel(getIntervalSeq(semitones), 3); // output interval sequence to ref label 3
   }
 }
 
@@ -80,6 +86,7 @@ function reset() {
   // hide secondary comments
   this.patcher.getnamed("refLabel[1][1]").message("hidden", 1);
   this.patcher.getnamed("refLabel[1][2]").message("hidden", 1);
+  this.patcher.getnamed("refLabel[1][3]").message("hidden", 1);
   // remove scale nsliders
   removeScaleNSliders();
 }
@@ -308,6 +315,7 @@ function resetInputNslider() {
   var nslider = this.patcher.getnamed("nslider[0]");
 
   nslider.setattr("presentation_rect", [171, 0, 150, 169]);
+  nslider.message("clear"); // TODO: do we need to clear to prevent bug when using pedal / input to alter root?
 }
 
 /**
@@ -384,8 +392,6 @@ function sortSemitones(semitones) {
  */
 function getTargetSemitones(semitones) {
   var whiteKeys = [0, 2, 4, 5, 7, 9, 11];
-  var blackKeys = [1, 3, 6, 8, 10];
-  var usedBlackKeys = [];
   var targetKeys = whiteKeys;
 
   for (var i = 0; i < semitones.length; i++) {
@@ -473,26 +479,15 @@ function getTraditionalKey(firstSemitone) {
 }
 
 /**
- * @function handleScaleCountType
- * @description Fetches and outputs the scale count type (diatonic, pentatonic, etc.).
- * @param {number[]} semitones - The list of semitones in a scale.
+ * @function outputRefLabel
+ * @description Outputs string to numbered reference label on patcher.
+ * @param {string} message - The text to be set on the reference label.
+ * @param {number} labelNo - The label number (1-3) where the text should be shown.
  */
-function handleScaleCountType(semitones) {
-  var scaleCountTypeComment = this.patcher.getnamed("refLabel[1][1]");
-  scaleCountTypeComment.message("hidden", 0);
-  var scaleCountType = getScaleCountType(semitones);
-  scaleCountTypeComment.message("set", scaleCountType);
-}
+function outputRefLabel(message, labelNo) {
+  var labelName = "refLabel[1][" + labelNo + "]";
+  var comment = this.patcher.getnamed(labelName);
 
-/**
- * @function handleIntervalSeq
- * @description Fetches and outputs the interval sequence in W/H syntax or interval symbols.
- * @param {number[]} semitones - The list of semitones in a scale.
- */
-function handleIntervalSeq(semitones) {
-  var intervalSeqComment = this.patcher.getnamed("refLabel[1][2]");
-  intervalSeqComment.message("hidden", 0);
-  var intervalSeq = getIntervalSeq(semitones);
-
-  intervalSeqComment.message("set", intervalSeq);
+  comment.message("hidden", 0);
+  comment.message("set", message);
 }

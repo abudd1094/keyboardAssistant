@@ -121,48 +121,42 @@ function normalize(semitones) {
   });
 }
 
+// Normalizes all semitones to first octave and transposes to C
+function normalizeToC(semitones) {
+  return semitones.map(function (s) {
+    return s % 12 - semitones[0] % 12;
+  });
+}
+
 // Returns the term for the scale type based on the number of semitones
 function getScaleCountType(semitones) {
   switch (semitones.length) {
     case 1:
       return "Monotonic - 1 note";
-      break;
     case 2:
       return "Ditonic - 2 notes";
-      break;
     case 3:
       return "Tritonic - 3 notes";
-      break;
     case 4:
       return "Tetraonic - 4 notes";
-      break;
     case 5:
       return "Pentatonic - 5 notes";
-      break;
     case 6:
       return "Hexatonic - 6 notes";
-      break;
     case 7:
       return "Heptatonic - 7 notes";
-      break;
     case 8:
       return "Octatonic - 8 notes";
-      break;
     case 9:
       return "Nonatonic - 9 notes";
-      break;
     case 10:
       return "Decatonic - 10 notes";
-      break;
     case 11:
       return "Undecatonic - 11 notes";
-      break;
     case 12:
       return "Duodecatonic - 12 notes";
-      break;
     default:
       return "";
-      break;
   }
 }
 
@@ -226,5 +220,6 @@ exports.detectBlackKey = detectBlackKey;
 exports.getBlackKeyCount = getBlackKeyCount;
 exports.getBlackKeys = getBlackKeys;
 exports.normalize = normalize;
+exports.normalizeToC = normalizeToC;
 exports.getScaleCountType = getScaleCountType;
 exports.getIntervalSeq = getIntervalSeq;
