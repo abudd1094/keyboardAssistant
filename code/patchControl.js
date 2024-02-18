@@ -125,7 +125,7 @@ function handleControls(hide) {
   this.patcher.getnamed("kslider_root[1]").setattr("hidden", hiddenValue);
   this.patcher.getnamed("button_hideRootLabels").message(0);
   this.patcher.getnamed("button_hideRootLabels").setattr("hidden", hiddenValue);
-  this.patcher.getnamed("key_type[1]").setattr("hidden", hiddenValue);
+  // this.patcher.getnamed("key_type[1]").setattr("hidden", hiddenValue); // keep key type visible for input parser
   this.patcher.getnamed("extend[1]").setattr("hidden", hiddenValue);
   this.patcher
     .getnamed("nslider[1]")

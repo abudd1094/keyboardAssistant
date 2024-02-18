@@ -6,7 +6,6 @@
 var {
   detectBlackKey,
   normalize,
-  normalizeToC,
   getScaleCountType,
   getIntervalSeq,
 } = require("utilities");
@@ -26,6 +25,7 @@ var lastKey = 0;
  */
 function list() {
   var semitones = arrayfromargs(arguments);
+
   g = new Global("ref");
 
   reset(); // reset patcher to original state
@@ -46,31 +46,42 @@ function list() {
     var height = 22;
     var fontSize = 14;
 
+    var scaleCountType = getScaleCountType(normalizedSemitones); // get scale count type
+    var intervalSeq = getIntervalSeq(semitones); // get sequence of intervals in scale in one of two formats (Whole Half tones or Interval names)
+    var isDiatonic = intervalSeq == "W-W-H-W-W-W"; // check if interval sequence is diatonic
+
     var targetSemitones = getTargetSemitones(normalizedSemitones); // get semitones to be altered in key signature
-    var sortedSemitones = sortSemitones(targetSemitones); // sort semitones in traditional order
+
+    if (isDiatonic) {
+      scaleCountType = "Diatonic"; // if interval sequence is diatonic, adjust scale count type to reflect this
+      var sortedSemitones = getDiatonicKeySignature(normalizedSemitones[0]); // get diatonic key signature semitones
+
+      renderKeySignature(
+        // render key signature comments
+        sortedSemitones,
+        xPos,
+        yPos,
+        width,
+        height,
+        fontSize,
+        g.useSharp,
+        xInterval,
+        yInterval
+      );
+    } 
 
     handleKeyType(normalizedSemitones); // adjust key type tabs object if necessary
 
     renderScaleNSliders(semitones); // render scale nsliders
-    renderKeySignature( // render key signature comments
-      sortedSemitones,
-      xPos,
-      yPos,
-      width,
-      height,
-      fontSize,
-      g.useSharp,
-      xInterval,
-      yInterval
-    );
 
-    outputRefLabel(getScaleCountType(normalizedSemitones), 1); // output scale count type to ref label 1
 
-    var accidentalType = g.useSharp ? " sharps" : " flats";
-    var blackKeyCount = String(sortedSemitones.length) + accidentalType;
+    outputRefLabel(scaleCountType, 1); // output scale count type to ref label 1
+
+    var accidentalType = g.useSharp ? targetSemitones.length == 1 ? " sharp" : " sharps" : targetSemitones.length == 1 ? " flat" : " flats" 
+    var blackKeyCount = String(targetSemitones.length) + accidentalType;
 
     outputRefLabel(blackKeyCount, 2); // output black key count to ref label 2
-    outputRefLabel(getIntervalSeq(semitones), 3); // output interval sequence to ref label 3
+    outputRefLabel(intervalSeq, 3); // output interval sequence to ref label 3
   }
 }
 
@@ -161,7 +172,7 @@ function renderScaleNSliders(semitones) {
   var yPos = viewport[1];
 
   var width = viewport[2] / 11; // divide width by highest possible number of semitones (chromatic scale: 11)
-  var height = viewport[3]; // match height of ref nslider 
+  var height = viewport[3]; // match height of ref nslider
 
   for (var i = 0; i < semitones.length; i++) {
     renderNslider(semitones[i], xPos, yPos, width, height);
@@ -185,18 +196,14 @@ function renderScaleNSliders(semitones) {
 function renderNslider(semitone, xPos, yPos, width, height) {
   var g = new Global("ref");
 
-  var nSlider = this.patcher.newdefault(
-    0,
-    0,
-    "nslider"
-  );
+  var nSlider = this.patcher.newdefault(0, 0, "nslider");
   nSlider.setattr("presentation", 1);
   nSlider.setattr("presentation_rect", xPos, yPos, 50, height);
   nSlider.setattr("clefs", 0);
   nSlider.setattr("staffs", 0);
   nSlider.setattr("ignoreclick", 1);
-  nSlider.setattr("bgcolor", 0.200, 0.200, 0.200, 0.000);
-  nSlider.setattr("fgcolor", 0.000, 0.000, 0.000, 1.000);
+  nSlider.setattr("bgcolor", 0.2, 0.2, 0.2, 0.0);
+  nSlider.setattr("fgcolor", 0.0, 0.0, 0.0, 1.0);
   nSlider.message(g.useSharp ? semitone : 0 - semitone);
 
   this.patcher.bringtofront(nSlider);
@@ -230,7 +237,7 @@ function renderComment(
   yInterval,
   bassClef
 ) {
-  // if fed black key, adjust to white key accordingly (down for sharps, up for flats)
+  // if fed black key, adjust to relative white key accordingly (down for sharps, up for flats)
   if (detectBlackKey(semitone)) {
     if (useSharp) {
       semitone -= 1;
@@ -366,22 +373,126 @@ function adjustInputNslider(xOffset) {
 }
 
 /**
- * @function sortSemitones
- * @description Returns semitones in the traditional order of sharps or flats.
- * @param {number[]} semitones - The semitones to be sorted.
- * @returns {number[]} The sorted semitones.
+ * @function getDiatonicKeySignature
+ * @description Returns the key signature for a diatonic scale starting with the given first semitone.
+ * @param {number} firstSemitone - The first semitone of the scale.
+ * @returns {number[]} The key signature for the diatonic scale.
  */
-function sortSemitones(semitones) {
-  // B♭, E♭, A♭, D♭, G♭, C♭, F♭
-  var order = g.useSharp ? [5, 0, 7, 2, 9, 4, 11] : [11, 4, 9, 2, 7, 0, 5];
+function getDiatonicKeySignature(firstSemitone) {
+  if (g.useSharp) {
+    // Sharp Keys: C, G, D, A, E, B, F#, C#
+    // Signature notation order: F#, C#, G#, D#, A#, E#, B#
+    switch (firstSemitone) {
+      case 0: // C
+        return [];
+      case 7: // G
+        return [5];
+      case 2: // D
+        return [5, 0];
+      case 9: // A
+        return [5, 0, 7];
+      case 4: // E
+        return [5, 0, 7, 2];
+      case 11: // B
+        return [5, 0, 7, 2, 9];
+      case 6: // F#
+        return [5, 0, 7, 2, 9, 4];
+      case 1: // C#
+        return [5, 0, 7, 2, 9, 4, 11];
+      default:
+        return [];
+    }
+  } else {
+    // Flat Keys: C, F, B♭, E♭, A♭, D♭, G♭, C♭
+    // Signature notation order: B♭, E♭, A♭, D♭, G♭, C♭, F♭
+    switch (firstSemitone) {
+      case 0: // C
+        return [];
+      case 5: // F
+        return [11];
+      case 10: // B♭
+        return [11, 4];
+      case 3: // E♭
+        return [11, 4, 9];
+      case 8: // A♭
+        return [11, 4, 9, 2];
+      case 1: // D♭
+        return [11, 4, 9, 2, 7];
+      case 6: // G♭
+        return [11, 4, 9, 2, 7, 0];
+      case 11: // C♭
+        return [11, 4, 9, 2, 7, 0, 5];
+      default:
+        return [];
+    }
+  }
+}
 
-  var filteredSemitones = semitones.filter(function (s) {
-    return order.indexOf(s) > -1;
-  });
 
-  return filteredSemitones.sort(function (a, b) {
-    return order.indexOf(a % 12) - order.indexOf(b % 12);
-  });
+/**
+ * @function handleKeyType
+ * @description Adjusts the key type (sharp or flat) based on the first semitone in the scale.
+ * @param {number[]} semitones - The semitones of the scale.
+ */
+function handleKeyType(semitones) {
+  var firstSemitone = semitones[0];
+
+  if (firstSemitone != lastKey) {
+    var traditionalKey = getTraditionalKey(semitones[0]);
+
+    setKeyType(traditionalKey);
+  }
+
+  lastKey = firstSemitone;
+}
+
+/**
+ * @function setKeyType
+ * @description Adjusts the key type globally and on the panel (sharp or flat).
+ * @param {number} keyType - The key type (0 for flat, 1 for sharp).
+ * @returns {number} The adjusted key type.
+ */
+function setKeyType(keyType) {
+  var keyTypeTab = this.patcher.getnamed("key_type[1]");
+  keyTypeTab.message(keyType);
+  g.useSharp = keyType;
+  return keyType;
+}
+
+/**
+ * @function getTraditionalKey
+ * @description Checks whether the key is traditionally noted with sharps or flats.
+ * @param {number} firstSemitone - The first semitone of the scale.
+ * @returns {number} The traditional key type (0 for flat, 1 for sharp).
+ */
+function getTraditionalKey(firstSemitone) {
+  sharpKeys = [0, 7, 2, 9, 4, 11];
+  flatKeys = [5, 10, 3, 8, 1, 6];
+
+  var isSharpKey = sharpKeys.indexOf(firstSemitone) > -1;
+  var isFlatKey = flatKeys.indexOf(firstSemitone) > -1;
+
+  if (isFlatKey) {
+    return 0;
+  }
+
+  if (isSharpKey) {
+    return 1;
+  }
+}
+
+/**
+ * @function outputRefLabel
+ * @description Outputs string to numbered reference label on patcher.
+ * @param {string} message - The text to be set on the reference label.
+ * @param {number} labelNo - The label number (1-3) where the text should be shown.
+ */
+function outputRefLabel(message, labelNo) {
+  var labelName = "refLabel[1][" + labelNo + "]";
+  var comment = this.patcher.getnamed(labelName);
+
+  comment.message("hidden", 0);
+  comment.message("set", message);
 }
 
 /**
@@ -420,74 +531,20 @@ function getTargetSemitones(semitones) {
 }
 
 /**
- * @function handleKeyType
- * @description Adjusts the key type (sharp or flat) based on the first semitone in the scale.
- * @param {number[]} semitones - The semitones of the scale.
+ * @function sortSemitones
+ * @description Returns semitones in the traditional order of sharps or flats.
+ * @param {number[]} semitones - The semitones to be sorted.
+ * @returns {number[]} The sorted semitones.
  */
-function handleKeyType(semitones) {
-  var firstSemitone = semitones[0];
+function sortSemitones(semitones) {
+  // F#, C#, G#, D#, A#, E#, B# (sharps order) : B♭, E♭, A♭, D♭, G♭, C♭, F♭ (flats order)
+  var order = g.useSharp ? [5, 0, 7, 2, 9, 4, 11] : [11, 4, 9, 2, 7, 0, 5];
 
-  if (firstSemitone != lastKey) {
-    var traditionalKey = getTraditionalKey(semitones[0]);
+  var filteredSemitones = semitones.filter(function (s) {
+    return order.indexOf(s) > -1;
+  });
 
-    // if key can be notated in sharps or flats, leave unchanged, otherwise adjust
-    if (traditionalKey != 2) {
-      setKeyType(traditionalKey);
-    }
-  }
-
-  lastKey = firstSemitone;
-}
-
-/**
- * @function setKeyType
- * @description Adjusts the key type globally and on the panel (sharp or flat).
- * @param {number} keyType - The key type (0 for flat, 1 for sharp).
- * @returns {number} The adjusted key type.
- */
-function setKeyType(keyType) {
-  var keyTypeTab = this.patcher.getnamed("key_type[1]");
-  keyTypeTab.message(keyType);
-  g.useSharp = keyType;
-  return keyType;
-}
-
-/**
- * @function getTraditionalKey
- * @description Checks whether the key is traditionally noted with sharps or flats.
- * @param {number} firstSemitone - The first semitone of the scale.
- * @returns {number} The traditional key type (0 for flat, 1 for sharp, 2 for both).
- */
-function getTraditionalKey(firstSemitone) {
-  sharpKeys = [0, 7, 2, 9, 4, 11, 6, 1];
-  flatKeys = [0, 5, 10, 3, 8, 1, 6, 11];
-
-  var isSharpKey = sharpKeys.indexOf(firstSemitone) > -1;
-  var isFlatKey = flatKeys.indexOf(firstSemitone) > -1;
-
-  if (isSharpKey && isFlatKey) {
-    return 2;
-  }
-
-  if (isFlatKey) {
-    return 0;
-  }
-
-  if (isSharpKey) {
-    return 1;
-  }
-}
-
-/**
- * @function outputRefLabel
- * @description Outputs string to numbered reference label on patcher.
- * @param {string} message - The text to be set on the reference label.
- * @param {number} labelNo - The label number (1-3) where the text should be shown.
- */
-function outputRefLabel(message, labelNo) {
-  var labelName = "refLabel[1][" + labelNo + "]";
-  var comment = this.patcher.getnamed(labelName);
-
-  comment.message("hidden", 0);
-  comment.message("set", message);
+  return filteredSemitones.sort(function (a, b) {
+    return order.indexOf(a % 12) - order.indexOf(b % 12);
+  });
 }
