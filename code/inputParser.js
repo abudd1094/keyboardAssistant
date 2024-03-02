@@ -10,7 +10,7 @@ setoutletassist(0, "\n 0: Output");
 
 // Import necessary functions for hiding and showing note labels over the kslider objects
 var { hideNote, showNote } = require("interfaceControl");
-var { normalizeToC } = require("utilities");
+var { normalizeToC, parseNoteName } = require("utilities");
 
 // Semitones that are currently being played are stored here
 var notes = [];
@@ -25,18 +25,15 @@ var intervals;
 // Holds objects with patcher panel / comment objects: { firstNote: firstNote, secondNote: secondNote, panel: panel, comment: comment }
 var patcherIntervals = [];
 
-// colors used for interval panels and comments
-var color1 = [0.0, 0.886, 1.0, 1.0]; // light blue
-var color2 = [0.992, 1.0, 0.0, 1.0]; // yellow
-
 // MAX FUNCTIONS
 /**
  * @function loadbang
  * @description Loads local data from JSON files when the patcher is loaded.
  */
 function loadbang() {
-  // if no intervals exist for reference, import them
+  // if no intervals or chords exist for reference, import them
   if (!intervals) importIntervals();
+  if (!chords) importChords();
 }
 
 /**
@@ -81,19 +78,13 @@ function localizeNote(noteVeloPair) {
   var velocity = noteVeloPair[1];
 
   // add note if it is new
-  if (
-    (notes.indexOf(note) == -1) &&
-    velocity > 0
-  ) {
+  if (notes.indexOf(note) == -1 && velocity > 0) {
     notes.push(note);
     showNote(note);
   }
 
   // remove note if it is old
-  if (
-    (notes.indexOf(note) != -1) &&
-    velocity == 0
-  ) {
+  if (notes.indexOf(note) != -1 && velocity == 0) {
     notes = notes.filter(function (existingNote) {
       if (existingNote == note) {
         hideNote(note);
@@ -126,7 +117,7 @@ function importChords() {
   var d = new Dict("tempChords"); // import to temporary dictionary
   d.import_json("factory_chords.json");
 
-  intervals = JSON.parse(d.stringify());
+  chords = JSON.parse(d.stringify());
   post("Imported chords \n");
 }
 
@@ -147,9 +138,13 @@ function setMode(v) {
 function handleSingleInterval() {
   removeAllIntervals();
 
+  var firstNote = notes[notes.length - 2]
+  var secondNote = notes[notes.length - 1]
+
+  var intervalName = getIntervalName(firstNote, secondNote);
   // detect and show last interval if more than one note
   if (notes.length > 1) {
-    showInterval(notes[notes.length - 2], notes[notes.length - 1]);
+    showInterval(firstNote, secondNote, intervalName);
   }
 }
 
@@ -165,10 +160,16 @@ function handleMultiInterval() {
     return a - b;
   });
 
+
+
   // iterate through ordered notes and show each interval
   for (var i = 0; i < orderedNotes.length - 1; i++) {
+    var firstNote = orderedNotes[i];
+    var secondNote = orderedNotes[i + 1];
+
+      var intervalName = getIntervalName(firstNote, secondNote);
     if (orderedNotes[i + 1]) {
-      showInterval(orderedNotes[i], orderedNotes[i + 1], i % 2 != 0);
+      showInterval(firstNote, secondNote, intervalName, i % 2 != 0);
     }
   }
 }
@@ -179,6 +180,13 @@ function handleMultiInterval() {
  */
 function handleChord() {
   removeAllIntervals();
+
+  // sort notes by pitch
+  var orderedNotes = notes.slice().sort();
+
+  var chordName = getChordName(orderedNotes);
+
+  showInterval(orderedNotes[0], orderedNotes[orderedNotes.length - 1], chordName);
 }
 
 // HELPER FUNCTIONS
@@ -215,15 +223,20 @@ function getIntervalName(firstNote, secondNote) {
  */
 function getChordName(semitones) {
   var normalizedSemitones = normalizeToC(semitones);
+  var root = parseNoteName(semitones[0]);
+
+  post(semitones + "\n");
+  post(normalizedSemitones + "\n");
 
   // iterate through intervals to find a match and return the name
   for (var chordName in chords) {
     var currentChord = chords[chordName];
 
-    if (currentChord.semitones == normalizedSemitones) {
-      return chordName;
-    } else {
-      return "";
+    if (
+      JSON.stringify(currentChord.semitones) ==
+      JSON.stringify(normalizedSemitones)
+    ) {
+      return root + " " + chordName;
     }
   }
 }
@@ -233,9 +246,10 @@ function getChordName(semitones) {
  * @description Displays the interval on the Max patcher using comments / panels above the kslider objects.
  * @param {number} firstNote - The first note of the interval.
  * @param {number} secondNote - The second note of the interval.
+ * @param {string} label - Label to display above interval.
  * @param {boolean} altColor - Whether to use an alternate color for the interval.
  */
-function showInterval(firstNote, secondNote, altColor) {
+function showInterval(firstNote, secondNote, label, altColor) {
   var d = new Dict("colors"); // import user colors
   d.import_json("colors.json");
   colors = JSON.parse(d.stringify());
@@ -243,7 +257,6 @@ function showInterval(firstNote, secondNote, altColor) {
   // get patcher objects to calculate display coordinates
   var kslider = this.patcher.getnamed("kslider[2]");
   var kslider_presentation_rect = kslider.getattr("presentation_rect");
-  var intervalName = getIntervalName(firstNote, secondNote);
 
   var firstNoteComment = this.patcher.getnamed("comment_note_" + firstNote);
   var firstNotePresentationRect = firstNoteComment.getattr("presentation_rect");
@@ -291,9 +304,9 @@ function showInterval(firstNote, secondNote, altColor) {
   comment.setattr("presentation", true);
   // use full name for single interval or symbol for multiple
   if (mode == "Single Interval") {
-    comment.message("set", intervalName);
-  } else {
-    comment.message("set", intervals[intervalName].symbol);
+    comment.message("set", label);
+  } else if (mode == "Multi Interval") {
+    comment.message("set", intervals[label].symbol);
     comment.setattr(
       "presentation_rect",
       startingXpos + offsetX,
@@ -307,6 +320,8 @@ function showInterval(firstNote, secondNote, altColor) {
     } else {
       comment.setattr("textcolor", colors.parserComment.alt);
     }
+  } else if (mode == "Chord") {
+    comment.message("set", label);
   }
   this.patcher.bringtofront(comment);
 
