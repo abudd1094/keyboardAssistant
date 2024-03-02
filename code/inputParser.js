@@ -10,6 +10,7 @@ setoutletassist(0, "\n 0: Output");
 
 // Import necessary functions for hiding and showing note labels over the kslider objects
 var { hideNote, showNote } = require("interfaceControl");
+var { normalizeToC } = require("utilities");
 
 // Semitones that are currently being played are stored here
 var notes = [];
@@ -58,6 +59,10 @@ function list() {
       if (!intervals) importIntervals();
       handleMultiInterval();
       break;
+    case "Chord":
+      if (!chords) importChords();
+      handleChord();
+      break;
     default:
       break;
   }
@@ -72,12 +77,12 @@ function list() {
 function localizeNote(noteVeloPair) {
   var note = noteVeloPair[0];
   // check for both positive and negative (positive is sharp, negative is flat, but they represent the same note and should be treated as one)
-  var absNote = Math.abs(note);
+  note = Math.abs(note);
   var velocity = noteVeloPair[1];
 
   // add note if it is new
   if (
-    (notes.indexOf(absNote) == -1 || notes.indexOf(note) == -1) &&
+    (notes.indexOf(note) == -1) &&
     velocity > 0
   ) {
     notes.push(note);
@@ -86,12 +91,12 @@ function localizeNote(noteVeloPair) {
 
   // remove note if it is old
   if (
-    (notes.indexOf(absNote) != -1 || notes.indexOf(note) != -1) &&
+    (notes.indexOf(note) != -1) &&
     velocity == 0
   ) {
     notes = notes.filter(function (existingNote) {
-      if (existingNote == absNote) {
-        hideNote(absNote);
+      if (existingNote == note) {
+        hideNote(note);
       }
       if (existingNote == note) {
         hideNote(note);
@@ -122,7 +127,7 @@ function importChords() {
   d.import_json("factory_chords.json");
 
   intervals = JSON.parse(d.stringify());
-  post("Imported intervals \n");
+  post("Imported chords \n");
 }
 
 /**
@@ -168,6 +173,14 @@ function handleMultiInterval() {
   }
 }
 
+/**
+ * @function handleChord
+ * @description Handles the display of a single interval.
+ */
+function handleChord() {
+  removeAllIntervals();
+}
+
 // HELPER FUNCTIONS
 /**
  * @function getIntervalName
@@ -180,14 +193,7 @@ function getIntervalName(firstNote, secondNote) {
   var intervalNotes = [firstNote, secondNote];
 
   // normalize to first octave in key of C (lowest note should be zero)
-  var normalizedSemitones = intervalNotes.map(function (semitone) {
-    return semitone - intervalNotes[0];
-  });
-
-  // normalize to the same octave if more than one octave difference
-  normalizedSemitones = normalizedSemitones.map(function (semitone) {
-    return semitone % 12;
-  });
+  var normalizedSemitones = normalizeToC(intervalNotes);
 
   // iterate through intervals to find a match and return the name
   for (var intervalName in intervals) {
@@ -201,6 +207,28 @@ function getIntervalName(firstNote, secondNote) {
 }
 
 /**
+ * @function getChordName
+ * @description Returns the name of the interval based on the provided notes.
+ * @param {number} firstNote - The first note of the interval.
+ * @param {number} secondNote - The second note of the interval.
+ * @returns {string} The name of the interval.
+ */
+function getChordName(semitones) {
+  var normalizedSemitones = normalizeToC(semitones);
+
+  // iterate through intervals to find a match and return the name
+  for (var chordName in chords) {
+    var currentChord = chords[chordName];
+
+    if (currentChord.semitones == normalizedSemitones) {
+      return chordName;
+    } else {
+      return "";
+    }
+  }
+}
+
+/**
  * @function showInterval
  * @description Displays the interval on the Max patcher using comments / panels above the kslider objects.
  * @param {number} firstNote - The first note of the interval.
@@ -208,6 +236,10 @@ function getIntervalName(firstNote, secondNote) {
  * @param {boolean} altColor - Whether to use an alternate color for the interval.
  */
 function showInterval(firstNote, secondNote, altColor) {
+  var d = new Dict("colors"); // import user colors
+  d.import_json("colors.json");
+  colors = JSON.parse(d.stringify());
+
   // get patcher objects to calculate display coordinates
   var kslider = this.patcher.getnamed("kslider[2]");
   var kslider_presentation_rect = kslider.getattr("presentation_rect");
@@ -243,9 +275,9 @@ function showInterval(firstNote, secondNote, altColor) {
   // set color
   if (mode != "Single Interval") {
     if (altColor) {
-      panel.setattr("bgfillcolor", color1);
+      panel.setattr("bgfillcolor", colors.parserComment.default);
     } else {
-      panel.setattr("bgfillcolor", color2);
+      panel.setattr("bgfillcolor", colors.parserComment.alt);
     }
   }
   this.patcher.bringtofront(panel);
@@ -271,9 +303,9 @@ function showInterval(firstNote, secondNote, altColor) {
     );
     // set color
     if (altColor) {
-      comment.setattr("textcolor", color1);
+      comment.setattr("textcolor", colors.parserComment.default);
     } else {
-      comment.setattr("textcolor", color2);
+      comment.setattr("textcolor", colors.parserComment.alt);
     }
   }
   this.patcher.bringtofront(comment);

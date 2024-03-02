@@ -48,7 +48,7 @@ function list() {
 
     var scaleCountType = getScaleCountType(normalizedSemitones); // get scale count type
     var intervalSeq = getIntervalSeq(semitones); // get sequence of intervals in scale in one of two formats (Whole Half tones or Interval names)
-    var isDiatonic = intervalSeq == "W-W-H-W-W-W"; // check if interval sequence is diatonic
+    var isDiatonic = intervalSeq == "2 - 2 - 1 - 2 - 2 - 2"; // check if interval sequence is diatonic
 
     var targetSemitones = getTargetSemitones(normalizedSemitones); // get semitones to be altered in key signature
 
@@ -203,7 +203,12 @@ function renderNslider(semitone, xPos, yPos, width, height) {
   nSlider.setattr("staffs", 0);
   nSlider.setattr("ignoreclick", 1);
   nSlider.setattr("bgcolor", 0.2, 0.2, 0.2, 0.0);
-  nSlider.setattr("fgcolor", 0.0, 0.0, 0.0, 1.0);
+
+  var d = new Dict("colors"); // import user colors
+  d.import_json("colors.json");
+  colors = JSON.parse(d.stringify());
+
+  detectBlackKey(semitone % 12) ?  nSlider.setattr("fgcolor", colors.nslider.blackKey) :  nSlider.setattr("fgcolor", colors.nslider.default); 
   nSlider.message(g.useSharp ? semitone : 0 - semitone);
 
   this.patcher.bringtofront(nSlider);

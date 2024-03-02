@@ -124,7 +124,7 @@ function normalize(semitones) {
 // Normalizes all semitones to first octave and transposes to C
 function normalizeToC(semitones) {
   return semitones.map(function (s) {
-    return s % 12 - semitones[0] % 12;
+    return (s % 12) - (semitones[0] % 12);
   });
 }
 
@@ -163,55 +163,12 @@ function getScaleCountType(semitones) {
 // Returns the interval sequence for a given array of semitones (either in terms of half steps or whole steps or interval names if not possible)
 function getIntervalSeq(semitones) {
   var intervals = [];
-  var tones = [];
 
-  for (var i = 0; i <= semitones.length; i++) {
-    switch (semitones[i + 1] - semitones[i]) {
-      case 1:
-        intervals.push("m2");
-        tones.push("H");
-        break;
-      case 2:
-        intervals.push("M2");
-        tones.push("W");
-        break;
-      case 3:
-        intervals.push("m3");
-        break;
-      case 4:
-        intervals.push("M3");
-        break;
-      case 5:
-        intervals.push("P4");
-        break;
-      case 6:
-        intervals.push("TT");
-        break;
-      case 7:
-        intervals.push("P5");
-        break;
-      case 8:
-        intervals.push("m6");
-        break;
-      case 9:
-        intervals.push("M6");
-        break;
-      case 10:
-        intervals.push("m7");
-        break;
-      case 11:
-        intervals.push("M7");
-        break;
-      default:
-        break;
-    }
+  for (var i = 0; i < semitones.length - 1; i++) {
+    intervals.push(semitones[i + 1] - semitones[i])
   }
 
-  if (intervals.length > tones.length) {
-    return intervals.join("-");
-  } else {
-    return tones.join("-");
-  }
+  return intervals.join(" - ");
 }
 
 // EXPORTS

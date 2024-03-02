@@ -111,7 +111,6 @@ function loadChords(d) {
   this.patcher.getnamed("nslider[1]").setattr("hidden", 0);
 }
 
-
 /**
  * @function handleControls
  * @description Shows/hides/adjusts patcher object controls based on the reference mode.
@@ -121,7 +120,7 @@ function handleControls(hide) {
   var hiddenValue = hide ? 1 : 0;
 
   // show / hide controls
-  this.patcher.getnamed("kslider_root[1]_label").setattr("hidden", hiddenValue);
+  this.patcher.getnamed("kslider_root_label[1]").setattr("hidden", hiddenValue);
   this.patcher.getnamed("kslider_root[1]").setattr("hidden", hiddenValue);
   this.patcher.getnamed("button_hideRootLabels").message(0);
   this.patcher.getnamed("button_hideRootLabels").setattr("hidden", hiddenValue);
@@ -130,26 +129,28 @@ function handleControls(hide) {
   this.patcher
     .getnamed("nslider[1]")
     .setattr("hidden", refMode == "Scale" ? 1 : hiddenValue); // hide nslider[1] for scale mode
-  this.patcher.getnamed("umenu_ref[1]_label").setattr("hidden", hiddenValue);
-  this.patcher.getnamed("umenu_ref[1]_label").message("set", refMode); // set ref umenu label to mode name
+  this.patcher.getnamed("umenu_ref_label[1]").setattr("hidden", hiddenValue);
+  this.patcher.getnamed("umenu_ref_label[1]").message("set", refMode); // set ref umenu label to mode name
   this.patcher.getnamed("umenu_ref[1]").setattr("hidden", hiddenValue);
-  this.patcher.getnamed("num_octave[1]_label").setattr("hidden", hiddenValue);
+  this.patcher.getnamed("num_octave_label[1]").setattr("hidden", hiddenValue);
   this.patcher
-    .getnamed("num_octave[1]_label")
-    .message("set", refMode == "Chord" ? "Oct / Inv" : "Octave"); // extend octave label to "Oct / Inv" for chord mode
+    .getnamed("num_octave_label[1]")
+    .message("set", refMode == "Chord" || refMode == "Scale" ? "Oct / Inv" : "Octave"); // extend octave label to "Oct / Inv" for chord mode
   this.patcher.getnamed("num_octave[1]").setattr("hidden", hiddenValue);
 
-  // only show inversion for chord mode
-  if (refMode == "Chord") {
+  // only show inversion for chord or scale mode
+  if (refMode == "Chord" || refMode == "Scale") {
+    this.patcher.getnamed("num_inversion[1]").message(0);
     this.patcher.getnamed("num_inversion[1]").setattr("hidden", 0);
   } else {
     this.patcher.getnamed("num_inversion[1]").setattr("hidden", 1);
   }
-  // adjust octave umenu width for chord mode so inversion umenu can fit
+
+  // adjust octave umenu width for chord / scale mode so inversion umenu can fit
   var octaveUmenuPresentationRect = this.patcher
     .getnamed("num_octave[1]")
     .getattr("presentation_rect");
-  var umenuWidth = refMode == "Chord" ? 48 : 100; // adjust width to accommodate inversion menu
+  var umenuWidth = refMode == "Chord" || refMode == "Scale" ? 48 : 100; // adjust width to accommodate inversion menu
   this.patcher
     .getnamed("num_octave[1]")
     .setattr("presentation_rect", [
