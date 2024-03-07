@@ -8,12 +8,8 @@ var {
   normalize,
   getScaleCountType,
   getIntervalSeq,
+  getAllMaxclass,
 } = require("utilities");
-
-// array of max comment objects used to display key signature
-var trebleCommentObjects = [];
-var bassCommentObjects = [];
-var scaleNSliderObjects = [];
 
 // used by handleKeyType to determine whether key type has changed
 var lastKey = 0;
@@ -66,18 +62,24 @@ function list() {
         fontSize,
         g.useSharp,
         xInterval,
-        yInterval
+        yInterval,
+        "nslider[bg]" // render main key signature to the background nslider
       );
-    } 
+    }
 
     handleKeyType(normalizedSemitones); // adjust key type tabs object if necessary
 
-    renderScaleNSliders(semitones); // render scale nsliders
-
+    renderScaleNSliders("nslider[1]", semitones); // render scale nsliders
 
     outputRefLabel(scaleCountType, 1); // output scale count type to ref label 1
 
-    var accidentalType = g.useSharp ? targetSemitones.length == 1 ? " sharp" : " sharps" : targetSemitones.length == 1 ? " flat" : " flats" 
+    var accidentalType = g.useSharp
+      ? targetSemitones.length == 1
+        ? " sharp"
+        : " sharps"
+      : targetSemitones.length == 1
+      ? " flat"
+      : " flats";
     var blackKeyCount = String(targetSemitones.length) + accidentalType;
 
     outputRefLabel(blackKeyCount, 2); // output black key count to ref label 2
@@ -124,7 +126,8 @@ function renderKeySignature(
   fontSize,
   useSharp,
   xInterval,
-  yInterval
+  yInterval,
+  nSliderScriptingName
 ) {
   // render comments for each sharp or flat in the key signature
   for (var i = 0; i < semitones.length; i++) {
@@ -139,7 +142,8 @@ function renderKeySignature(
       useSharp,
       xInterval,
       yInterval,
-      true
+      true,
+      nSliderScriptingName
     );
 
     // treble clef
@@ -153,7 +157,8 @@ function renderKeySignature(
       useSharp,
       xInterval,
       yInterval,
-      false
+      false,
+      nSliderScriptingName
     );
   }
 }
@@ -163,9 +168,9 @@ function renderKeySignature(
  * @description Renders the scale nsliders based on the given semitones.
  * @param {number[]} semitones - The list of semitones in a scale.
  */
-function renderScaleNSliders(semitones) {
+function renderScaleNSliders(nSliderScriptingName, semitones) {
   var viewport = this.patcher
-    .getnamed("nslider[1]") // use ref nslider as base
+    .getnamed(nSliderScriptingName) // use ref nslider as base
     .getattr("presentation_rect");
 
   var xPos = viewport[0];
@@ -175,13 +180,34 @@ function renderScaleNSliders(semitones) {
   var height = viewport[3]; // match height of ref nslider
 
   for (var i = 0; i < semitones.length; i++) {
-    renderNslider(semitones[i], xPos, yPos, width, height);
+    renderNslider(
+      semitones[i],
+      xPos,
+      yPos,
+      width,
+      height,
+      nSliderScriptingName + "[" + i + "]"
+    );
     xPos += width;
   }
 
   // render last first note of next octave
-  renderNslider(semitones[0] + 12, xPos, yPos, width, height);
+  renderNslider(
+    semitones[0] + 12,
+    xPos,
+    yPos,
+    width,
+    height,
+    nSliderScriptingName + "[firstNoteOfNextOctave]"
+  );
 }
+
+/**
+ * @function renderSupplementalScale
+ * @description
+ * @param {number[]} semitones -
+ */
+function renderSupplementalScale(semitones) {}
 
 // HELPER FUNCTIONS
 /**
@@ -193,10 +219,12 @@ function renderScaleNSliders(semitones) {
  * @param {number} width - The width of the nslider.
  * @param {number} height - The height of the nslider.
  */
-function renderNslider(semitone, xPos, yPos, width, height) {
+function renderNslider(semitone, xPos, yPos, width, height, varname) {
+  width = width > 50 ? Math.floor(width) : 50; // adjust width to display note, 50 is the minimum width for a visible note (left hand clef margin is always present)
   var g = new Global("ref");
 
   var nSlider = this.patcher.newdefault(0, 0, "nslider");
+  nSlider.setattr("varname", varname);
   nSlider.setattr("presentation", 1);
   nSlider.setattr("presentation_rect", xPos, yPos, 50, height);
   nSlider.setattr("clefs", 0);
@@ -208,12 +236,12 @@ function renderNslider(semitone, xPos, yPos, width, height) {
   d.import_json("colors.json");
   colors = JSON.parse(d.stringify());
 
-  detectBlackKey(semitone % 12) ?  nSlider.setattr("fgcolor", colors.nslider.blackKey) :  nSlider.setattr("fgcolor", colors.nslider.default); 
+  detectBlackKey(semitone % 12)
+    ? nSlider.setattr("fgcolor", colors.nslider.blackKey)
+    : nSlider.setattr("fgcolor", colors.nslider.default);
   nSlider.message(g.useSharp ? semitone : 0 - semitone);
 
   this.patcher.bringtofront(nSlider);
-
-  scaleNSliderObjects.push(nSlider);
 }
 
 /**
@@ -240,7 +268,8 @@ function renderComment(
   useSharp,
   xInterval,
   yInterval,
-  bassClef
+  bassClef,
+  nSliderScriptingName
 ) {
   // if fed black key, adjust to relative white key accordingly (down for sharps, up for flats)
   if (detectBlackKey(semitone)) {
@@ -253,7 +282,7 @@ function renderComment(
 
   // determine offsets
   var clefOffset = 20;
-  var xOffset = clefOffset + xInterval * trebleCommentObjects.length; // adjust x offset based on number of comments
+  var xOffset = clefOffset + xInterval * getKeySigCleffCount(nSliderScriptingName, "treble"); // adjust x offset based on number of comments
   var yOffset = getKeySigYOffset(semitone % 12, useSharp, yInterval); // adjust y offset based on sharp or flat note
 
   if (bassClef) yOffset += 35; // adjust y offset for bass clef
@@ -269,10 +298,9 @@ function renderComment(
     width,
     height
   );
-  comment.setattr(
-    "varname",
-    "keySig[1]_" + bassClef ? "bass_" : "treble_" + semitone
-  );
+  var bassOrTreble = bassClef ? "[bass]" : "[treble]";
+  var commentVarname = nSliderScriptingName + bassOrTreble + "[" + semitone + "]";
+  comment.setattr("varname", commentVarname);
   comment.setattr("fontsize", fontSize);
   comment.setattr("fontname", "Times New Roman");
   comment.setattr("presentation", 1);
@@ -284,12 +312,20 @@ function renderComment(
   } else {
     comment.message("set", "♭");
   }
+}
 
-  // add comment to array of comment objects for future manipulation
-  if (bassClef) {
-    bassCommentObjects.push(comment);
-  } else {
-    trebleCommentObjects.push(comment);
+/**
+ * @function removeScaleNSliders
+ * @description Removes all the temporary scale nsliders from the patcher.
+ */
+function removeScaleNSliders() {
+  var nsliders = getAllMaxclass("nslider");
+  var tempNsliders = nsliders.filter(function (nslider) { return nslider.varname != "nslider[bg]" && nslider.varname != "nslider[0]" && nslider.varname != "nslider[1]" });
+
+  if (tempNsliders.length > 0) {
+    for (var i = 0; i < tempNsliders.length; i++) {
+      this.patcher.remove(tempNsliders[i]);
+    }
   }
 }
 
@@ -298,25 +334,26 @@ function renderComment(
  * @description Removes all comment objects from the patcher.
  */
 function removeAllComments() {
-  for (var i = 0; i < trebleCommentObjects.length; i++) {
-    this.patcher.remove(trebleCommentObjects[i]);
-    this.patcher.remove(bassCommentObjects[i]);
-  }
+  var comments = getAllMaxclass("comment");
+  var keySigComments = comments.filter(function (comment) { return comment.varname.indexOf("nslider") != -1; });
 
-  trebleCommentObjects = [];
-  bassCommentObjects = [];
+  for (var i = 0; i < keySigComments.length; i++) {
+    this.patcher.remove(keySigComments[i]);
+  }
 }
 
 /**
- * @function removeScaleNSliders
- * @description Removes all the scale nsliders from the patcher.
+ * @function removeAllComments
+ * @description Removes all comment objects from the patcher.
+ * @param {string} nSliderScriptingName - The associated nslider scripting name.
+ * @param {string} cleff - The target cleff of the key signature.
+ * @returns {number} Number of rendered comments in the target key signature (used to calculate x offset).
  */
-function removeScaleNSliders() {
-  if (scaleNSliderObjects.length > 0) {
-    for (var i = 0; i < scaleNSliderObjects.length; i++) {
-      this.patcher.remove(scaleNSliderObjects[i]);
-    }
-  }
+function getKeySigCleffCount(nSliderScriptingName, cleff) {
+  var comments = getAllMaxclass("comment");
+  var keySigComments = comments.filter(function (comment) { return comment.varname.indexOf(nSliderScriptingName) != -1 && comment.varname.indexOf(cleff) != -1; });
+
+  return keySigComments.length;
 }
 
 /**
@@ -432,7 +469,6 @@ function getDiatonicKeySignature(firstSemitone) {
     }
   }
 }
-
 
 /**
  * @function handleKeyType

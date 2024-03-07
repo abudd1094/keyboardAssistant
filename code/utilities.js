@@ -171,6 +171,27 @@ function getIntervalSeq(semitones) {
   return intervals.join(" - ");
 }
 
+/**
+ * @function getAllMaxclass
+ * @description Returns all MaxObj objects of a given maxclass that exist in the current patcher.
+ * @param {string} maxclass - The maxclass name of the objects to be returned.
+ * @returns {MaxObj[]} An array of MaxObj objects of the given maxclass.
+ */
+function getAllMaxclass(maxclass) {
+  var maxclassObjects = [];
+
+  var currentObject = this.patcher.firstobject;
+
+  while (currentObject) {
+    if (currentObject.maxclass == maxclass) {
+      maxclassObjects.push(currentObject);
+    }
+    currentObject = currentObject.nextobject;
+  }
+
+  return maxclassObjects;
+}
+
 // EXPORTS
 exports.parseNoteName = parseNoteName;
 exports.detectBlackKey = detectBlackKey;
@@ -180,3 +201,4 @@ exports.normalize = normalize;
 exports.normalizeToC = normalizeToC;
 exports.getScaleCountType = getScaleCountType;
 exports.getIntervalSeq = getIntervalSeq;
+exports.getAllMaxclass = getAllMaxclass;
