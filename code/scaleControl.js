@@ -46,8 +46,6 @@ function list() {
     var intervalSeq = getIntervalSeq(semitones); // get sequence of intervals in scale in one of two formats (Whole Half tones or Interval names)
     var isDiatonic = intervalSeq == "2 - 2 - 1 - 2 - 2 - 2"; // check if interval sequence is diatonic
 
-    var targetSemitones = getTargetSemitones(normalizedSemitones); // get semitones to be altered in key signature
-
     if (isDiatonic) {
       scaleCountType = "Diatonic"; // if interval sequence is diatonic, adjust scale count type to reflect this
       var sortedSemitones = getDiatonicKeySignature(normalizedSemitones[0]); // get diatonic key signature semitones
@@ -70,20 +68,8 @@ function list() {
     handleKeyType(normalizedSemitones); // adjust key type tabs object if necessary
 
     renderScaleNSliders("nslider[1]", semitones); // render scale nsliders
-
     outputRefLabel(scaleCountType, 1); // output scale count type to ref label 1
-
-    var accidentalType = g.useSharp
-      ? targetSemitones.length == 1
-        ? " sharp"
-        : " sharps"
-      : targetSemitones.length == 1
-      ? " flat"
-      : " flats";
-    var blackKeyCount = String(targetSemitones.length) + accidentalType;
-
-    outputRefLabel(blackKeyCount, 2); // output black key count to ref label 2
-    outputRefLabel(intervalSeq, 3); // output interval sequence to ref label 3
+    outputRefLabel(intervalSeq, 2); // output interval sequence to ref label 2
   }
 }
 
@@ -166,6 +152,7 @@ function renderKeySignature(
 /**
  * @function renderScaleNSliders
  * @description Renders the scale nsliders based on the given semitones.
+ * @param {string} nSliderScriptingName - The name of the base nslider to render the scale nsliders in line with.
  * @param {number[]} semitones - The list of semitones in a scale.
  */
 function renderScaleNSliders(nSliderScriptingName, semitones) {
@@ -201,13 +188,6 @@ function renderScaleNSliders(nSliderScriptingName, semitones) {
     nSliderScriptingName + "[firstNoteOfNextOctave]"
   );
 }
-
-/**
- * @function renderSupplementalScale
- * @description
- * @param {number[]} semitones -
- */
-function renderSupplementalScale(semitones) {}
 
 // HELPER FUNCTIONS
 /**
@@ -588,4 +568,22 @@ function sortSemitones(semitones) {
   return filteredSemitones.sort(function (a, b) {
     return order.indexOf(a % 12) - order.indexOf(b % 12);
   });
+}
+
+// TODO: Develop extension system for viewing related scales in full screen
+function renderScale() {
+  var bgNslider = renderBgNslider();
+  renderScaleNSliders("nslider[extended][bg][0]", [60, 61, 62]);
+}
+
+function renderBgNslider() {
+  var bgNslider = this.patcher.newdefault(113, 1663, "nslider"); // instantiate and position in patcher viewport
+  bgNslider.setattr("varname", "nslider[extended][bg][0]"); // set varname
+  bgNslider.setattr("presentation", 1); // add to presentation
+  bgNslider.setattr("presentation_rect", [171, 207, 169, 169]); // position in presentation viewport
+  bgNslider.setattr("bgcolor", 1, 1, 1, 1); // set background to white
+  bgNslider.setattr("fgcolor", 0, 0, 0, 1); // set foreground to white
+  bgNslider.setattr("mode", 1); // set foreground to white
+
+  return bgNslider;
 }

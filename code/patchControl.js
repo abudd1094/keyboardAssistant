@@ -94,6 +94,9 @@ function loadIntervals(d) {
   currentDict = d;
   d.import_json("factory_intervals.json");
 
+  // hide the extend button for intervals, they work differently
+  this.patcher.getnamed("extend[1]").setattr("hidden", 1);
+
   // show nslider 1
   this.patcher.getnamed("nslider[1]").setattr("hidden", 0);
 }
@@ -124,7 +127,6 @@ function handleControls(hide) {
   this.patcher.getnamed("kslider_root[1]").setattr("hidden", hiddenValue);
   this.patcher.getnamed("button_hideRootLabels").message(0);
   this.patcher.getnamed("button_hideRootLabels").setattr("hidden", hiddenValue);
-  // this.patcher.getnamed("key_type[1]").setattr("hidden", hiddenValue); // keep key type visible for input parser
   this.patcher.getnamed("extend[1]").setattr("hidden", hiddenValue);
   this.patcher
     .getnamed("nslider[1]")

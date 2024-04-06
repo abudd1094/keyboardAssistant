@@ -198,19 +198,15 @@ function handleChord() {
  * @returns {string} The name of the interval.
  */
 function getIntervalName(firstNote, secondNote) {
-  var intervalNotes = [firstNote, secondNote];
-
-  // normalize to first octave in key of C (lowest note should be zero)
-  var normalizedSemitones = normalizeToC(intervalNotes);
+  var incomingInterval = Math.abs(secondNote - firstNote) % 12;
 
   // iterate through intervals to find a match and return the name
   for (var intervalName in intervals) {
-    var currentInterval = intervals[intervalName];
-    var semitoneDifference =
-      currentInterval.semitones[1] - normalizedSemitones[1];
+    var currentIntervalObj = intervals[intervalName];
+    var currentInterval = currentIntervalObj.semitones[1];
 
-    if (semitoneDifference == 12) return "Octave";
-    if (!semitoneDifference) return intervalName;
+    if (incomingInterval == 0) return "Octave";
+    if (currentInterval == incomingInterval) return intervalName;
   }
 }
 
