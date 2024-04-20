@@ -116,15 +116,17 @@ function getBlackKeys(semitonesArr, normalize) {
 
 // Normalizes all semitones to first octave
 function normalize(semitones) {
+  var rootNote = semitones[0] % 12;
+
   return semitones.map(function (s) {
-    return s % 12;
+    return s - semitones[0] + rootNote;
   });
 }
 
 // Normalizes all semitones to first octave and transposes to C
 function normalizeToC(semitones) {
   return semitones.map(function (s) {
-    return (s % 12) - (semitones[0] % 12);
+    return s - semitones[0];
   });
 }
 

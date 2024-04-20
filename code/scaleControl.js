@@ -9,6 +9,7 @@ var {
   getScaleCountType,
   getIntervalSeq,
   getAllMaxclass,
+  parseNoteName,
 } = require("utilities");
 
 // used by handleKeyType to determine whether key type has changed
@@ -24,10 +25,11 @@ function list() {
 
   g = new Global("ref");
 
-  reset(); // reset patcher to original state
+  reset(); // reset patcher to original state 
 
   if (g.refMode == "Scale") {
     var normalizedSemitones = normalize(semitones);
+
     // define variables for comment positioning
     var viewport = this.patcher
       .getnamed("nslider[0]") // use leftmost nslider as reference
@@ -70,7 +72,36 @@ function list() {
     renderScaleNSliders("nslider[1]", semitones); // render scale nsliders
     outputRefLabel(scaleCountType, 1); // output scale count type to ref label 1
     outputRefLabel(intervalSeq, 2); // output interval sequence to ref label 2
+    
+    parseMajorModes(normalizedSemitones[0]);
   }
+}
+
+function parseMajorModes(root) {
+  var dorian = root + 10 % 12;
+  var phrygian = root + 8 % 12;
+  var lydian = root + 7 % 12;
+  var mixolydian = root + 5 % 12;
+  var aeolian = root + 3 % 12;
+  var locrian = root + 1 % 12;
+
+  outputRefLabel('Dorian', 3); 
+  outputRefLabel(parseNoteName(dorian), 4); 
+
+  outputRefLabel('Phrygian', 5); 
+  outputRefLabel(parseNoteName(phrygian), 6); 
+
+  outputRefLabel('Lydian', 7); 
+  outputRefLabel(parseNoteName(lydian), 8); 
+
+  outputRefLabel('Mixolydian', 9); 
+  outputRefLabel(parseNoteName(mixolydian), 10); 
+
+  outputRefLabel('Aeolian', 11); 
+  outputRefLabel(parseNoteName(aeolian), 12); 
+
+  outputRefLabel('Locrian', 13); 
+  outputRefLabel(parseNoteName(locrian), 14); 
 }
 
 /**
@@ -86,6 +117,17 @@ function reset() {
   this.patcher.getnamed("refLabel[1][1]").message("hidden", 1);
   this.patcher.getnamed("refLabel[1][2]").message("hidden", 1);
   this.patcher.getnamed("refLabel[1][3]").message("hidden", 1);
+  this.patcher.getnamed("refLabel[1][4]").message("hidden", 1);
+  this.patcher.getnamed("refLabel[1][5]").message("hidden", 1);
+  this.patcher.getnamed("refLabel[1][6]").message("hidden", 1);
+  this.patcher.getnamed("refLabel[1][7]").message("hidden", 1);
+  this.patcher.getnamed("refLabel[1][8]").message("hidden", 1);
+  this.patcher.getnamed("refLabel[1][9]").message("hidden", 1);
+  this.patcher.getnamed("refLabel[1][10]").message("hidden", 1);
+  this.patcher.getnamed("refLabel[1][11]").message("hidden", 1);
+  this.patcher.getnamed("refLabel[1][12]").message("hidden", 1);
+  this.patcher.getnamed("refLabel[1][13]").message("hidden", 1);
+  this.patcher.getnamed("refLabel[1][14]").message("hidden", 1);
   // remove scale nsliders
   removeScaleNSliders();
 }
@@ -315,7 +357,7 @@ function removeScaleNSliders() {
  */
 function removeAllComments() {
   var comments = getAllMaxclass("comment");
-  var keySigComments = comments.filter(function (comment) { return comment.varname.indexOf("nslider") != -1; });
+  var keySigComments = comments.filter(function (comment) { return comment.varname.indexOf("nslider") != -1; }); // 
 
   for (var i = 0; i < keySigComments.length; i++) {
     this.patcher.remove(keySigComments[i]);

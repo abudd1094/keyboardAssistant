@@ -221,9 +221,6 @@ function getChordName(semitones) {
   var normalizedSemitones = normalizeToC(semitones);
   var root = parseNoteName(semitones[0]);
 
-  post(semitones + "\n");
-  post(normalizedSemitones + "\n");
-
   // iterate through intervals to find a match and return the name
   for (var chordName in chords) {
     var currentChord = chords[chordName];
